@@ -1,6 +1,6 @@
 // Service worker voor "Kan de was buiten?"
 // Bewaart de app zelf (zodat hij snel opent), maar haalt weergegevens altijd vers op.
-const CACHE = "wasweer-v1";
+const CACHE = "wasweer-v2";
 const APP = ["./", "index.html", "manifest.webmanifest", "favicon-32.png", "icon-180.png", "icon-192.png", "icon-512.png"];
 
 self.addEventListener("install", e => {

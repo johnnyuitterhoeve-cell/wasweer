@@ -44,6 +44,11 @@
   .verdict h2{font-family:Fraunces,Georgia,serif;font-size:1.9rem;margin:4px 0 6px;line-height:1.15}
   .verdict p{margin:0;opacity:.95}
   .v-top{background:var(--top)} .v-ja{background:var(--ja)} .v-twijfel{background:var(--twijfel);color:#2a1f00} .v-nee{background:var(--nee)}
+  .times{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+  .times div{background:rgba(255,255,255,.18);border-radius:12px;padding:10px 12px}
+  .v-twijfel .times div{background:rgba(0,0,0,.08)}
+  .times small{display:block;opacity:.85;font-size:.8rem}
+  .times b{font-size:1.15rem}
   .factors{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .f{border:1px solid var(--line);border-radius:12px;padding:12px}
   .f .k{font-size:.8rem;color:var(--muted)}
@@ -56,7 +61,9 @@
   .h{flex:none;width:58px;text-align:center;font-size:.78rem;color:var(--muted)}
   .h .bar{height:38px;border-radius:8px;margin:4px 0}
   .h b{display:block;color:var(--ink);font-weight:600}
-  .best{font-weight:600;margin:0 0 10px}
+  .best{font-weight:600;margin:0 0 4px}
+  .legend{display:flex;gap:12px;flex-wrap:wrap;font-size:.78rem;color:var(--muted);margin-top:6px}
+  .legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}
   label.s{display:block;margin:14px 0 2px;font-weight:500}
   label.s span{float:right;color:var(--muted);font-weight:400}
   input[type=range]{width:100%;accent-color:var(--accent)}
@@ -67,7 +74,8 @@
   .hidden{display:none}
   h3{margin:0 0 10px;font-size:1rem}
   details summary{cursor:pointer;font-weight:600}
-  details ul{padding-left:18px;color:var(--muted);font-size:.92rem}
+  details p, details ul{color:var(--muted);font-size:.92rem}
+  details ul{padding-left:18px}
   .install{display:flex;align-items:center;gap:12px;position:relative;padding-right:34px}
   .install.hidden{display:none}
   .install img{border-radius:11px;flex:none}
@@ -79,7 +87,7 @@
 <body>
 <main>
   <h1>Kan de was buiten?</h1>
-  <p class="sub">Luchtvochtigheid, wind, temperatuur en zon in één oordeel.</p>
+  <p class="sub">Hoe lang je was nodig heeft, berekend uit zon, wind, luchtvochtigheid en temperatuur.</p>
 
   <div class="card install hidden" id="install">
     <img src="icon-192.png" alt="" width="48" height="48">
@@ -115,16 +123,22 @@
   <section id="hand" class="hidden">
     <div class="card">
       <label class="s">Luchtvochtigheid <span id="oRh"></span></label>
-      <input type="range" id="iRh" min="20" max="100" value="65">
+      <input type="range" id="iRh" min="20" max="100" value="80">
       <label class="s">Wind <span id="oWind"></span></label>
-      <input type="range" id="iBft" min="0" max="10" value="3">
+      <input type="range" id="iBft" min="0" max="10" value="2">
       <label class="s">Temperatuur <span id="oTemp"></span></label>
-      <input type="range" id="iTemp" min="-15" max="35" value="12">
+      <input type="range" id="iTemp" min="-15" max="35" value="10">
       <label class="s">Lucht</label>
       <div class="seg" id="iSky">
-        <button data-v="10" class="on">☀️ Zon</button>
-        <button data-v="50">⛅ Half</button>
-        <button data-v="95">☁️ Bewolkt</button>
+        <button data-v="zon" class="on">☀️ Zon</button>
+        <button data-v="half">⛅ Half</button>
+        <button data-v="grijs">☁️ Bewolkt</button>
+      </div>
+      <label class="s">Seizoen <span class="note">(hoe hoog de zon staat)</span></label>
+      <div class="seg" id="iSeizoen">
+        <button data-v="50">Zomer</button>
+        <button data-v="32">Lente/herfst</button>
+        <button data-v="15" class="on">Winter</button>
       </div>
       <label class="s">Neerslag</label>
       <div class="seg" id="iRain">
@@ -136,120 +150,119 @@
   </section>
 
   <details class="card">
-    <summary>Hoe wordt dit bepaald?</summary>
+    <summary>Hoe wordt dit berekend?</summary>
+    <p>De app rekent met de energiebalans van natte stof, hetzelfde principe als de Penman-Monteith-vergelijking die weerdiensten voor hun "droogindex" gebruiken. Per uur bepaalt hij hoeveel water er uit je was kan verdampen:</p>
     <ul>
-      <li><b>Boven 85%</b> luchtvochtigheid: droogt extreem traag of niet.</li>
-      <li><b>70–85%</b>: alleen met een stevige, droge bries (windkracht 4 of meer).</li>
-      <li><b>Onder 70%</b>: goed. <b>Onder 50%</b>: ideaal, ook zonder veel wind of zon.</li>
-      <li><b>Wind</b> weegt zwaar: windkracht 3–4 is perfect. Vanaf 7 wordt het lastig, vanaf 8 waait je was weg.</li>
-      <li><b>Temperatuur</b>: vanaf 15°C gaat het vlot; tot 5°C prima als het droog is en waait.</li>
-      <li><b>Zon</b> versnelt het drogen, maar laat donkere en felle kleuren verbleken.</li>
-      <li><b>Vriezen</b> (−2°C of kouder, en droge lucht): de was bevriest en het ijs verdampt direct (sublimatie). IJskoud maar droog.</li>
-      <li>Regen of grote kans op regen: niet doen.</li>
+      <li><b>Zon</b> levert energie. De app berekent de zonnestand en hoeveel directe en diffuse straling op hangende was valt. Lage winterzon raakt een hangend shirt verrassend goed.</li>
+      <li><b>Vochttekort</b>: hoeveel waterdamp de lucht nog kan opnemen. Dat hangt af van luchtvochtigheid én temperatuur: 70% bij 5°C droogt veel trager dan 70% bij 20°C.</li>
+      <li><b>Wind</b> voert de vochtige lucht rond de stof af. Windkracht 3–5 is ideaal, vanaf 8 waait je was weg.</li>
+      <li><b>Vorst</b>: onder 0°C bevriest de was en verdampt het ijs langzaam (sublimatie). Dat werkt, maar duurt lang.</li>
+      <li><b>Regen</b> maakt de was weer nat. <b>'s Avonds en 's nachts</b> stijgt de luchtvochtigheid en kan dauw de was zelfs weer vochtig maken.</li>
     </ul>
+    <p>Uitgangspunt: een goed gecentrifugeerd T-shirt en een badhanddoek, vrij hangend in een gewone tuin. De tijden zijn schattingen. In een beschutte hoek of met dubbel hangende stof duurt het langer.</p>
   </details>
 </main>
 
 <script>
+/* ================= NATUURKUNDE ================= */
+const SIG=5.67e-8, CP=1005, RHO=1.25, RV=461.5;
+const esW = T => 611.2*Math.exp(17.62*T/(243.12+T));   // verzadigingsdampdruk boven water (Pa)
+const esI = T => 611.2*Math.exp(22.46*T/(272.62+T));   // boven ijs
 const BFT = [1,6,12,20,29,39,50,62,75,89,103,118];
-const BFT_KMH = [0,3,9,16,24,34,44,56,68,82,96]; // midden van elke windkracht
 const bft = kmh => { let b=0; while(b<BFT.length && kmh>=BFT[b]) b++; return b; };
+const BFT_KMH = [0,3,9,16,24,34,44,56,68,82,96];
 const BFT_NAAM = ["windstil","zwak","zwak","matig","matig","vrij krachtig","krachtig","hard","stormachtig","storm","zware storm","zeer zware storm","orkaan"];
-const LVL = ["nee","twijfel","ja","top"];
+
+// Geabsorbeerde zonnestraling per m² stof (gemiddeld over beide zijden), voor verticaal hangende was
+function zonOpStof(dni, dif, elev){
+  if (elev <= 0) return 0;
+  const direct = dni * Math.cos(elev*Math.PI/180) * 0.8;   // 0.8: lijn staat niet altijd recht naar de zon
+  return 0.6 * (0.5*direct + 0.5*dif);                     // 0.6: lichte/middelkleurige stof
+}
+
+// Verdamping in kg water per m² stof per uur (ideaal, beide zijden). Negatief = dauw.
+function verdamping({T, RH, windKmh, S, cloud=50}){
+  const v = Math.max(0.3, windKmh/3.6*0.5);                 // wind op lijnhoogte in een tuin
+  const h = 5.7 + 3.8*v, hm = h/(RHO*CP)*0.9;
+  const epsSky = 0.75 + 0.2*Math.min(100,cloud)/100;
+  const Tk = T+273.15;
+  const rva = (RH/100)*esW(T)/(RV*Tk);
+  const bal = Ts => {
+    const ijs = Ts < 0, Ls = ijs ? 2.83e6 : 2.47e6;
+    const L = 4*SIG*Tk**3*(Ts-T) + 0.5*(1-epsSky)*SIG*Tk**4;
+    const E = hm*((ijs?esI(Ts):esW(Ts))/(RV*(Ts+273.15)) - rva);
+    return [S - L - h*(Ts-T) - Ls*E, E];
+  };
+  let lo=T-25, hi=T+30, m=T;
+  for (let i=0;i<60;i++){ m=(lo+hi)/2; if (bal(m)[0]>0) lo=m; else hi=m; }
+  return { r: bal(m)[1]*3600*2, Ts: m };
+}
+
+// Water dat verdampt moet worden (kg/m²), inclusief praktijkfactor 2:
+// trage laatste fase, dubbele naden, niet overal vrije wind.
+const WATER = { shirt: 0.12*2, handdoek: 0.45*2 };
+
+// Zonnestand (graden boven horizon)
+function zonHoogte(lat, lon, ms){
+  const n = ms/86400000 + 2440587.5 - 2451545.0, rad = Math.PI/180;
+  const L = (280.46 + 0.9856474*n) % 360, g = ((357.528 + 0.9856003*n) % 360)*rad;
+  const lam = (L + 1.915*Math.sin(g) + 0.020*Math.sin(2*g))*rad, eps = (23.439 - 4e-7*n)*rad;
+  const dec = Math.asin(Math.sin(eps)*Math.sin(lam));
+  const ra = Math.atan2(Math.cos(eps)*Math.sin(lam), Math.cos(lam))/rad;
+  const gmst = ((18.697374558 + 24.06570982441908*n) % 24 + 24) % 24;
+  const lha = (gmst*15 + lon - ra)*rad;
+  return Math.asin(Math.sin(lat*rad)*Math.sin(dec) + Math.cos(lat*rad)*Math.cos(dec)*Math.cos(lha))/rad;
+}
+// Heldere-hemel straling (voor handmatige modus)
+const dniHelder = e => e<=0 ? 0 : 1353*Math.pow(0.7, Math.pow(1/Math.sin(e*Math.PI/180), 0.678));
+
 const LVL_TXT = {nee:"Niet doen",twijfel:"Twijfelgeval",ja:"Goed",top:"Ideaal"};
+const rateLvl = (r, regen) => regen ? "nee" : r >= 0.25 ? "top" : r >= 0.12 ? "ja" : r >= 0.05 ? "twijfel" : "nee";
 
-function beoordeel({rh, wind, temp, cloud, rain=0, rainProb=0, isDay=1}){
-  const b = bft(wind);
-  const f = {};   // factor -> [status, tekst]
-  const tips = [];
-  let lvl, titel, uitleg;
+/* ================= TEKSTJES ================= */
+const duur = u => { if (!isFinite(u)) return "—"; const m = Math.max(10, Math.round(u*60/5)*5); return m<60 ? `${m} min` : `${Math.floor(m/60)} u${m%60?" "+(m%60)+" min":""}`; };
 
-  // Luchtvochtigheid
-  if (rh > 85)      f.rh = ["bad","Bijna verzadigd: de was blijft klam"];
-  else if (rh >= 70) f.rh = ["ok","Matig: wind is nu nodig"];
-  else if (rh >= 50) f.rh = ["good","Goed: de lucht neemt vocht makkelijk op"];
-  else               f.rh = ["good","Ideaal: droogt heel snel"];
-
-  // Wind
-  if (b <= 1)      f.wind = ["ok","Nauwelijks wind, vocht blijft hangen"];
-  else if (b === 2) f.wind = ["ok","Lichte bries helpt een beetje"];
-  else if (b <= 4) f.wind = ["good","Perfect: blaast het vocht weg"];
-  else if (b <= 6) f.wind = ["good","Stevige wind, droogt snel. Gebruik extra knijpers"];
-  else if (b === 7) f.wind = ["ok","Hard: hang alles stevig vast"];
-  else              f.wind = ["bad","Storm: je was waait weg"];
-
-  // Temperatuur
-  const vorst = temp <= -2 && rh < 70;
-  if (vorst)            f.temp = ["good","Vriesdrogen: ijs verdampt direct"];
-  else if (temp >= 15)  f.temp = ["good","Warm: droogt vlot"];
-  else if (temp >= 5)   f.temp = ["good","Prima, mits droog en winderig"];
-  else if (temp > -2)   f.temp = ["ok","Koud: droogt trager"];
-  else                  f.temp = ["bad","Vorst, maar te vochtig om te vriesdrogen"];
-
-  // Zon
-  if (!isDay)          f.sun = ["ok","Donker: geen hulp van de zon"];
-  else if (cloud < 35) f.sun = ["good","Zonnig: warmt de stof op"];
-  else if (cloud < 75) f.sun = ["good","Af en toe zon"];
-  else                 f.sun = ["ok","Bewolkt: geen extra zonnewarmte"];
-
-  // Oordeel
-  if (rain > 0.1 || rainProb >= 60){
-    lvl="nee"; titel="Nee, het regent (straks)";
-    uitleg = rain > 0.1 ? "Er valt nu neerslag." : `Kans op regen: ${rainProb}%.`;
-  } else if (b >= 8){
-    lvl="nee"; titel="Nee, het stormt"; uitleg="Bij windkracht 8 of meer waait je was van de lijn.";
-  } else if (vorst){
-    lvl="ja"; titel="Ja, laat het vriesdrogen";
-    uitleg="Het water bevriest en het ijs verdampt direct (sublimatie). Je was wordt ijskoud maar droog. Het duurt wel wat langer.";
-  } else if (rh > 85){
-    lvl="nee"; titel="Nee, de lucht is te vochtig";
-    uitleg="Boven 85% luchtvochtigheid is de lucht bijna verzadigd. De was droogt nauwelijks.";
-  } else if (rh >= 70){
-    if (b >= 4){ lvl="twijfel"; titel="Kan, dankzij de wind"; uitleg="De lucht is vrij vochtig, maar de stevige bries zorgt dat het toch droogt."; }
-    else { lvl="nee"; titel="Liever niet"; uitleg="Bij 70–85% luchtvochtigheid droogt de was alleen met een stevige bries, en die staat er nu niet."; }
-  } else if (rh >= 50){
-    lvl="ja"; titel="Ja, de was kan buiten"; uitleg="De lucht kan het vocht uit je kleding makkelijk opnemen.";
-    if (b >= 3 && b <= 6 && temp >= 5){ lvl="top"; titel="Ja, perfect wasweer"; uitleg="Droge lucht én een goede bries: je was droogt snel."; }
-    else if (b <= 1 && temp < 5 && cloud >= 75){ lvl="twijfel"; titel="Kan, maar het gaat traag"; uitleg="De lucht is droog genoeg, maar het is koud, grijs en windstil."; }
-  } else {
-    lvl="top"; titel="Ja, ideaal wasweer"; uitleg="Onder 50% luchtvochtigheid droogt je was snel, zelfs zonder veel wind of zon.";
-    if (temp < 5 && b <= 1){ lvl="ja"; titel="Ja, de was kan buiten"; uitleg="Heel droge lucht, alleen koud en windstil, dus het gaat iets trager."; }
-  }
-  // Harde wind: één stap terug (behalve bij 'nee')
-  if (b === 7 && lvl !== "nee"){ lvl = LVL[Math.max(1, LVL.indexOf(lvl)-1)]; tips.push("Windkracht 7: gebruik extra knijpers en hang lakens dubbel over de lijn."); }
-
-  // Tips
-  if (lvl !== "nee" && isDay && cloud < 50) tips.push("Volop zon: hang donkere en felle kleuren binnenstebuiten tegen verbleken.");
-  if (lvl !== "nee" && !isDay) tips.push("Het is donker. 's Nachts stijgt de luchtvochtigheid en kan dauw je was weer vochtig maken. Hang hem liever overdag op.");
-  if (vorst && lvl !== "nee") tips.push("Haal de was voorzichtig binnen: bevroren stof kan knakken. Laat hem binnen even ontdooien.");
-  if (temp >= 5 && temp < 15 && lvl !== "nee" && b < 3) tips.push("Fris en weinig wind: hang de was ruim uit elkaar zodat de lucht erlangs kan.");
-
-  return {lvl, titel, uitleg, f, tips, b};
+function factoren(d, S, Ts, b){
+  const f = {};
+  f.rh = d.RH > 90 ? ["bad","Bijna verzadigd: alleen zon helpt nog"] : d.RH > 80 ? ["ok","Vochtig: zon of wind nodig"] : d.RH > 60 ? ["good","Redelijk droog"] : ["good","Droge lucht: neemt vocht makkelijk op"];
+  f.wind = b<=1 ? ["ok","Nauwelijks wind, vocht blijft hangen"] : b===2 ? ["ok","Lichte bries helpt een beetje"] : b<=5 ? ["good","Blaast het vocht goed weg"] : b<=6 ? ["good","Stevig: gebruik extra knijpers"] : b===7 ? ["ok","Hard: hang alles stevig vast"] : ["bad","Storm: je was waait weg"];
+  f.temp = Ts < 0 ? ["ok","Vriest: ijs verdampt langzaam"] : d.T >= 15 ? ["good","Warm: helpt mee"] : d.T >= 5 ? ["good","Fris, maar prima"] : ["ok","Koud: droogt trager"];
+  f.sun = S >= 90 ? ["good","Zon geeft flink extra droogkracht"] : S >= 35 ? ["good","Zon helpt mee"] : d.dag ? ["ok","Weinig zon"] : ["ok","Donker: geen hulp van de zon"];
+  return f;
 }
+function zonLabel(S, dag){ return !dag ? "🌙" : S>=90 ? "☀️ sterk" : S>=35 ? "🌤️ matig" : "☁️ zwak"; }
 
-function render(el, d, r){
+function renderFactoren(d, S, Ts, b){
+  const f = factoren(d,S,Ts,b);
   const fac = (k,label,val) => `<div class="f"><div class="k">${label}</div><div class="v">${val}</div>
-    <div class="n"><span class="dot d-${r.f[k][0]}"></span><span>${r.f[k][1]}</span></div></div>`;
-  el.innerHTML = `
-    <div class="verdict v-${r.lvl}">
-      <div class="lvl">${LVL_TXT[r.lvl]}</div>
-      <h2>${r.titel}</h2><p>${r.uitleg}</p>
-    </div>
-    <div class="card"><div class="factors">
-      ${fac("rh","Luchtvochtigheid",Math.round(d.rh)+"%")}
-      ${fac("wind","Wind",`${r.b} Bft <span class="note">· ${BFT_NAAM[r.b]}</span>`)}
-      ${fac("temp","Temperatuur",Math.round(d.temp)+"°C")}
-      ${fac("sun","Zon",d.isDay ? (d.cloud<35?"☀️":d.cloud<75?"⛅":"☁️")+` <span class="note">${Math.round(d.cloud)}% bewolkt</span>` : "🌙")}
-    </div></div>
-    ${r.tips.length ? `<div class="card"><h3>Tips</h3><ul class="tips">${r.tips.map(t=>`<li>${t}</li>`).join("")}</ul></div>` : ""}
-    <div id="${el.id}-extra"></div>`;
+    <div class="n"><span class="dot d-${f[k][0]}"></span><span>${f[k][1]}</span></div></div>`;
+  return `<div class="card"><div class="factors">
+    ${fac("rh","Luchtvochtigheid",Math.round(d.RH)+"%")}
+    ${fac("wind","Wind",`${b} Bft <span class="note">· ${BFT_NAAM[b]}</span>`)}
+    ${fac("temp","Temperatuur",Math.round(d.T)+"°C")}
+    ${fac("sun","Zon",zonLabel(S,d.dag))}
+  </div></div>`;
+}
+function renderTips(tips){ return tips.length ? `<div class="card"><h3>Tips</h3><ul class="tips">${tips.map(t=>`<li>${t}</li>`).join("")}</ul></div>` : ""; }
+function verdictHTML(lvl, titel, uitleg, tijden){
+  return `<div class="verdict v-${lvl}"><div class="lvl">${LVL_TXT[lvl]}</div><h2>${titel}</h2><p>${uitleg}</p>
+    ${tijden ? `<div class="times"><div><small>👕 T-shirt</small><b>${tijden[0]}</b></div><div><small>🛁 Handdoek</small><b>${tijden[1]}</b></div></div>` : ""}</div>`;
+}
+function drijfveer(S, b, RH){
+  if (S >= 90) return "De zon levert nu de meeste droogkracht.";
+  if (b >= 4) return "De wind doet nu het meeste werk.";
+  if (RH <= 60) return "De droge lucht doet nu het meeste werk.";
+  return "";
 }
 
-/* ---------- LIVE ---------- */
+/* ================= LIVE ================= */
 const $ = id => document.getElementById(id);
 const store = { get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}}, set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}} };
-
 function liveError(msg){ const e=$("liveErr"); e.textContent=msg; e.classList.remove("hidden"); }
+let TZ = 0; // utc-offset in seconden
+const klok = ms => { const d=new Date(ms+TZ*1000); return String(d.getUTCHours()).padStart(2,"0")+":"+String(d.getUTCMinutes()).padStart(2,"0"); };
+const dagnr = ms => Math.floor((ms+TZ*1000)/86400000);
+const dagNaam = (ms, nu) => { const v=dagnr(ms)-dagnr(nu); return v===0?"vandaag":v===1?"morgen":"overmorgen"; };
 
 async function zoek(){
   const q=$("q").value.trim(); if(!q) return;
@@ -262,58 +275,133 @@ async function zoek(){
     $("res").querySelectorAll("button").forEach(b=>b.onclick=()=>{ const p=j.results[b.dataset.i]; kies({name:p.name, sub:[p.admin1,p.country].filter(Boolean).join(", "), lat:p.latitude, lon:p.longitude}); });
   }catch(e){ geenLive(); }
 }
-
 function kies(loc){ $("res").innerHTML=""; store.set("wasLoc",loc); laad(loc); }
-
 function geenLive(){
   $("res").innerHTML="";
-  liveError("Live weer kan hier niet worden opgehaald (deze weergave blokkeert externe gegevens). Open de app via je eigen link (bijv. Netlify) voor live weer, of vul de waarden zelf in.");
+  liveError("Live weer kan hier niet worden opgehaald (deze weergave blokkeert externe gegevens). Open de app via je eigen link, of vul de waarden zelf in.");
   toon("hand");
 }
 
 async function laad(loc){
   $("place").textContent = `📍 ${loc.name}${loc.sub?" · "+loc.sub:""}`;
   $("liveOut").innerHTML = '<div class="card note">Weer ophalen…</div>';
-  const vars="temperature_2m,relative_humidity_2m,wind_speed_10m,cloud_cover,precipitation,is_day";
+  const vars = "temperature_2m,relative_humidity_2m,wind_speed_10m,cloud_cover,precipitation,precipitation_probability,is_day,direct_normal_irradiance,diffuse_radiation";
   try{
-    const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${loc.lat}&longitude=${loc.lon}&current=${vars}&hourly=${vars},precipitation_probability&timezone=auto&forecast_days=2&wind_speed_unit=kmh`);
-    const j = await r.json(); const c=j.current, h=j.hourly;
-    // huidige uur-index voor regenkans
-    const nu = c.time.slice(0,13);
-    let i0 = h.time.findIndex(t=>t.slice(0,13)===nu); if(i0<0) i0=0;
-    const d = {rh:c.relative_humidity_2m, wind:c.wind_speed_10m, temp:c.temperature_2m, cloud:c.cloud_cover, rain:c.precipitation, rainProb:h.precipitation_probability[i0]??0, isDay:c.is_day};
-    render($("liveOut"), d, beoordeel(d));
-    uren(h, i0);
+    const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${loc.lat}&longitude=${loc.lon}&hourly=${vars}&timezone=auto&timeformat=unixtime&past_hours=1&forecast_days=3&wind_speed_unit=kmh`);
+    const j = await r.json();
+    TZ = j.utc_offset_seconds || 0;
+    toonLive(prepareer(j, +loc.lat, +loc.lon), Date.now());
   }catch(e){ geenLive(); }
 }
 
-function uren(h, i0){
-  const kleur={top:"var(--top)",ja:"var(--ja)",twijfel:"var(--twijfel)",nee:"var(--nee)"};
-  const items=[];
-  for(let i=i0;i<Math.min(i0+24,h.time.length);i++){
-    const d={rh:h.relative_humidity_2m[i],wind:h.wind_speed_10m[i],temp:h.temperature_2m[i],cloud:h.cloud_cover[i],rain:h.precipitation[i],rainProb:h.precipitation_probability[i]??0,isDay:h.is_day[i]};
-    items.push({t:h.time[i].slice(11,16), dag:h.time[i].slice(0,10), d, r:beoordeel(d)});
+// Maak per uur-slot [t, t+1u] de invoer voor het model
+function prepareer(j, lat, lon){
+  const h = j.hourly, n = h.time.length, slots = [];
+  for (let i=0; i<n-1; i++){
+    const t = h.time[i]*1000, mid = t + 1800000;
+    const avg = k => (h[k][i] + h[k][i+1])/2;
+    const elev = zonHoogte(lat, lon, mid);
+    const S = zonOpStof(h.direct_normal_irradiance[i+1] ?? 0, h.diffuse_radiation[i+1] ?? 0, elev); // straling = gemiddelde van het afgelopen uur
+    const d = { T:avg("temperature_2m"), RH:avg("relative_humidity_2m"), windKmh:avg("wind_speed_10m"), cloud:avg("cloud_cover") };
+    const { r, Ts } = verdamping({ ...d, S });
+    const regen = (h.precipitation[i+1] ?? 0) >= 0.2 || (h.precipitation_probability[i+1] ?? 0) >= 70;
+    slots.push({ t, ...d, S, r, Ts, elev, dag: elev > -1, regen, kans: h.precipitation_probability[i+1] ?? 0, b: bft(d.windKmh) });
   }
-  // langste aaneengesloten blok 'ja'/'top' bij daglicht
-  let best=null, cur=null;
-  items.forEach((it,k)=>{
-    const ok = it.d.isDay && (it.r.lvl==="ja"||it.r.lvl==="top");
-    if(ok){ if(!cur) cur={s:k,e:k}; else cur.e=k; if(!best||cur.e-cur.s>best.e-best.s) best={...cur}; }
-    else cur=null;
-  });
-  const vandaag = items[0].dag;
-  const dagnaam = it => it.dag===vandaag ? "vandaag" : "morgen";
-  let txt;
-  if(best && best.e-best.s>=1){
-    const s=items[best.s], e=items[best.e];
-    const eind = String((+e.t.slice(0,2)+1)%24).padStart(2,"0")+":00";
-    txt = `Beste moment: ${dagnaam(s)} ${s.t}–${eind}`;
-  } else txt = "Komende 24 uur geen goed droogmoment bij daglicht.";
-  $("liveOut-extra").innerHTML = `<div class="card"><h3>Komende 24 uur</h3><p class="best">${txt}</p>
-    <div class="hours">${items.map(it=>`<div class="h" title="${LVL_TXT[it.r.lvl]}: ${it.r.titel}">${it.t}
-      <div class="bar" style="background:${kleur[it.r.lvl]};opacity:${it.d.isDay?1:.45}"></div>
-      <b>${Math.round(it.d.rh)}%</b>${it.r.b} Bft<br>${Math.round(it.d.temp)}°</div>`).join("")}</div>
-    <p class="note">Kleur = oordeel per uur, vervaagd = donker. Bron: Open-Meteo.</p></div>`;
+  return slots;
+}
+
+// Simuleer drogen vanaf moment 'start' (ms). Geeft droogmoment per item, of reden waarom niet.
+function simuleer(slots, start){
+  let i = slots.findIndex(s => start >= s.t && start < s.t + 3600000);
+  if (i < 0) return null;
+  const res = {};
+  for (const [item, W0] of Object.entries(WATER)){
+    let W = W0, t = start, klaar = null, regenNa = false, nacht = false;
+    for (let k=i; k<slots.length && t < start + 30*3600000; k++){
+      const s = slots[k], eind = s.t + 3600000, frac = (eind - t)/3600000;
+      if (s.regen){ W = W0; regenNa = true; t = eind; continue; }
+      if (!s.dag && s.r < 0.03) nacht = true;            // in het donker droogt het (bijna) niet meer
+      if (nacht){ break; }
+      const r = s.r;
+      if (r*frac >= W){ klaar = t + W/r*3600000; break; }
+      W = Math.min(W0, W - r*frac); t = eind;
+    }
+    res[item] = { klaar, uren: klaar ? (klaar-start)/3600000 : Infinity, regen: regenNa && !klaar };
+  }
+  return res;
+}
+
+function toonLive(slots, nu){
+  const iNu = slots.findIndex(s => nu >= s.t && nu < s.t+3600000);
+  if (iNu < 0){ geenLive(); return; }
+  const s = slots[iNu];
+  const tips = [];
+
+  // Oordeel voor 'nu ophangen'
+  let lvl, titel, uitleg, tijden = null;
+  const sim = simuleer(slots, nu);
+  const sh = sim.shirt, hd = sim.handdoek;
+  if (s.regen){
+    lvl="nee"; titel="Nee, het regent"; uitleg = s.kans ? `Kans op neerslag: ${s.kans}%.` : "Er valt nu neerslag.";
+  } else if (s.b >= 8){
+    lvl="nee"; titel="Nee, het stormt"; uitleg="Bij windkracht 8 of meer waait je was van de lijn.";
+  } else if (!s.dag){
+    lvl="nee"; titel="Nu niet: het is donker"; uitleg="'s Avonds en 's nachts stijgt de luchtvochtigheid en droogt er bijna niets. Kijk hieronder wanneer je het best kunt ophangen.";
+  } else if (!sh.klaar){
+    lvl="nee"; titel = sh.regen ? "Nee, er komt regen" : "Niet meer droog voor het donker";
+    uitleg = sh.regen ? "Er wordt regen verwacht voordat je was droog is." : "Zelfs een T-shirt wordt vandaag niet meer droog. Binnen drogen of een beter moment kiezen.";
+  } else {
+    tijden = [ `droog ~${klok(sh.klaar)}`, hd.klaar ? `droog ~${klok(hd.klaar)}` : (hd.regen ? "regen ertussen" : "niet voor het donker") ];
+    if (hd.klaar && hd.uren <= 3){ lvl="top"; titel="Ja, top wasweer"; }
+    else if (hd.klaar){ lvl="ja"; titel="Ja, alles wordt droog"; }
+    else if (sh.uren <= 3){ lvl="ja"; titel="Ja, voor dunne was"; tips.push("Handdoeken, jeans en dikke truien halen het niet voor het donker: hang ze alleen op als je ze binnen kunt afmaken."); }
+    else { lvl="twijfel"; titel="Kan, maar het gaat traag"; }
+    uitleg = `Nu ophangen: een T-shirt is in ongeveer ${duur(sh.uren)} droog${hd.klaar ? `, een handdoek in ${duur(hd.uren)}` : ""}. ${drijfveer(s.S, s.b, s.RH)}`;
+  }
+
+  // Tips
+  if (s.Ts < 0 && lvl !== "nee") tips.push("Het vriest: de was bevriest en het ijs verdampt langzaam. Haal hem voorzichtig binnen (bevroren stof kan knakken) en laat hem binnen afdrogen.");
+  if (s.b === 7) tips.push("Windkracht 7: gebruik extra knijpers en hang lakens dubbel over de lijn.");
+  if (s.S >= 90 && lvl !== "nee") tips.push("Volle zon: hang donkere en felle kleuren binnenstebuiten tegen verbleken, en hang de was met de breedste kant naar de zon.");
+  const donker = slots.find(x => x.t > nu && !x.dag);
+  if (lvl !== "nee" && donker && s.dag) tips.push(`Haal de was binnen vóór het donker wordt (rond ${klok(donker.t)}): daarna wordt de lucht vochtig en kan dauw hem weer nat maken.`);
+
+  $("liveOut").innerHTML = verdictHTML(lvl, titel, uitleg, tijden)
+    + renderFactoren({T:s.T, RH:s.RH, dag:s.dag}, s.S, s.Ts, s.b)
+    + renderTips(tips)
+    + beste(slots, nu) + strip(slots, iNu);
+}
+
+// Beste ophangmoment in de komende ~36 uur (alleen hele uren bij daglicht)
+function beste(slots, nu){
+  let best = null;
+  for (const s of slots){
+    if (s.t < nu - 1800000 || s.t > nu + 36*3600000 || !s.dag || s.regen) continue;
+    const start = Math.max(s.t, nu), sim = simuleer(slots, start);
+    if (!sim || !sim.shirt.klaar) continue;
+    // voorkeur: handdoek droog (snelst eerst), anders shirt snelst
+    const score = sim.handdoek.klaar ? sim.handdoek.uren : 100 + sim.shirt.uren;
+    if (!best || score < best.score - 0.05) best = { start, sim, score };
+  }
+  let txt, sub = "";
+  if (!best) txt = "De komende anderhalve dag is er geen goed moment om buiten te drogen.";
+  else {
+    const { start, sim } = best;
+    txt = `Beste moment om op te hangen: ${dagNaam(start,nu)} ${klok(start)}`;
+    sub = `👕 droog ~${klok(sim.shirt.klaar)} · 🛁 ${sim.handdoek.klaar ? "droog ~"+klok(sim.handdoek.klaar) : "niet voor het donker"}`;
+  }
+  return `<div class="card"><h3>Wanneer ophangen?</h3><p class="best">${txt}</p>${sub?`<p class="note" style="margin:0">${sub}</p>`:""}</div>`;
+}
+
+function strip(slots, iNu){
+  const kleur={top:"var(--top)",ja:"var(--ja)",twijfel:"var(--twijfel)",nee:"var(--nee)"};
+  const items = slots.slice(iNu, iNu+24);
+  return `<div class="card"><h3>Droogkracht per uur</h3>
+    <div class="hours">${items.map(s=>{ const l=rateLvl(s.r,s.regen); return `<div class="h" title="${LVL_TXT[l]}">${klok(s.t)}
+      <div class="bar" style="background:${kleur[l]};opacity:${s.dag?1:.45}"></div>
+      <b>${Math.round(s.RH)}%</b>${s.b} Bft<br>${Math.round(s.T)}°${s.S>=90?"<br>☀️":s.S>=35?"<br>🌤️":""}${s.regen?"<br>🌧️":""}</div>`; }).join("")}</div>
+    <div class="legend"><span><i style="background:var(--top)"></i>Ideaal</span><span><i style="background:var(--ja)"></i>Goed</span><span><i style="background:var(--twijfel)"></i>Traag</span><span><i style="background:var(--nee)"></i>Droogt niet</span></div>
+    <p class="note">Per uur: luchtvochtigheid, windkracht, temperatuur en zon. Vervaagd = donker. Bron: Open-Meteo.</p></div>`;
 }
 
 $("zoek").onclick=zoek;
@@ -337,30 +425,44 @@ $("gps").onclick=()=>{
     {timeout:15000, maximumAge:600000});
 };
 
-/* ---------- HANDMATIG ---------- */
-let sky=10, regen=0;
+/* ================= HANDMATIG ================= */
+let sky="zon", elevH=15, regenH=0;
 function hand(){
-  const rh=+$("iRh").value, b=+$("iBft").value, temp=+$("iTemp").value;
-  $("oRh").textContent=rh+"%"; $("oWind").textContent=`${b} Bft · ${BFT_NAAM[b]}`; $("oTemp").textContent=temp+"°C";
-  const d={rh, wind:BFT_KMH[b], temp, cloud:sky, rain:regen, isDay:1};
-  render($("handOut"), d, beoordeel(d));
+  const RH=+$("iRh").value, b=+$("iBft").value, T=+$("iTemp").value;
+  $("oRh").textContent=RH+"%"; $("oWind").textContent=`${b} Bft · ${BFT_NAAM[b]}`; $("oTemp").textContent=T+"°C";
+  const dni = dniHelder(elevH) * (sky==="zon"?1:sky==="half"?0.45:0);
+  const dif = (sky==="grijs"?0.12:0.08) * 1353 * Math.sin(elevH*Math.PI/180) + (sky==="half"?60:0);
+  const S = zonOpStof(dni, dif, elevH), cloud = sky==="zon"?10:sky==="half"?50:95;
+  const { r, Ts } = verdamping({ T, RH, windKmh:BFT_KMH[b], S, cloud });
+  const uSh = r>0 ? WATER.shirt/r : Infinity, uHd = r>0 ? WATER.handdoek/r : Infinity;
+  let lvl, titel, uitleg, tips=[];
+  if (regenH){ lvl="nee"; titel="Nee, het regent"; uitleg="Bij regen wordt je was alleen maar natter."; }
+  else if (b>=8){ lvl="nee"; titel="Nee, het stormt"; uitleg="Bij windkracht 8 of meer waait je was van de lijn."; }
+  else {
+    const dagUren = elevH>=45 ? 10 : elevH>=25 ? 7 : 4;   // bruikbare droog-uren per seizoen
+    lvl = uHd<=Math.min(3,dagUren) ? "top" : uHd<=dagUren ? "ja" : uSh<=Math.min(3,dagUren) ? "ja" : uSh<=dagUren ? "twijfel" : "nee";
+    titel = {top:"Ja, top wasweer", ja: uHd<=dagUren ? "Ja, alles wordt droog" : "Ja, voor dunne was", twijfel:"Kan, maar het gaat traag", nee:"Nee, dit droogt nauwelijks"}[lvl];
+    uitleg = `Als het zo blijft: een T-shirt is in ongeveer ${duur(uSh)} droog, een handdoek in ${duur(uHd)}. ${drijfveer(S,b,RH)}`;
+    if (uHd > dagUren && uSh <= dagUren) tips.push(`Handdoeken en jeans halen het waarschijnlijk niet voor het donker (in dit seizoen heb je zo'n ${dagUren} goede droog-uren). Maak ze binnen af.`);
+  }
+  if (Ts<0 && !regenH) tips.push("Het vriest: de was bevriest en het ijs verdampt langzaam (sublimatie). Laat hem binnen afdrogen.");
+  if (sky==="zon" && lvl!=="nee") tips.push("Volle zon: hang donkere en felle kleuren binnenstebuiten tegen verbleken.");
+  $("handOut").innerHTML = verdictHTML(lvl, titel, uitleg, lvl==="nee"&&regenH ? null : [duur(uSh), duur(uHd)])
+    + renderFactoren({T, RH, dag:true}, S, Ts, b) + renderTips(tips);
 }
 ["iRh","iBft","iTemp"].forEach(id=>$(id).addEventListener("input",hand));
-function seg(id,cb){ $(id).querySelectorAll("button").forEach(b=>b.onclick=()=>{ $(id).querySelectorAll("button").forEach(x=>x.classList.remove("on")); b.classList.add("on"); cb(+b.dataset.v); hand(); }); }
-seg("iSky",v=>sky=v); seg("iRain",v=>regen=v);
+function seg(id,cb){ $(id).querySelectorAll("button").forEach(b=>b.onclick=()=>{ $(id).querySelectorAll("button").forEach(x=>x.classList.remove("on")); b.classList.add("on"); cb(b.dataset.v); hand(); }); }
+seg("iSky",v=>sky=v); seg("iSeizoen",v=>elevH=+v); seg("iRain",v=>regenH=+v);
 
-/* ---------- TABS ---------- */
+/* ================= TABS ================= */
 function toon(w){ $("live").classList.toggle("hidden",w!=="live"); $("hand").classList.toggle("hidden",w!=="hand"); $("tLive").classList.toggle("on",w==="live"); $("tHand").classList.toggle("on",w==="hand"); }
 $("tLive").onclick=()=>toon("live"); $("tHand").onclick=()=>toon("hand");
 
-/* ---------- INSTALLEREN ALS APP ---------- */
+/* ================= INSTALLEREN ALS APP ================= */
 const alsApp = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
 const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 let installPrompt = null;
-
-if ("serviceWorker" in navigator) {
-  try { navigator.serviceWorker.register("sw.js").catch(()=>{}); } catch(e) {}
-}
+if ("serviceWorker" in navigator) { try { navigator.serviceWorker.register("sw.js").catch(()=>{}); } catch(e) {} }
 function toonInstall(){ if(!alsApp && !store.get("installWeg")) $("install").classList.remove("hidden"); }
 window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); installPrompt = e; toonInstall(); });
 window.addEventListener("appinstalled", () => $("install").classList.add("hidden"));
