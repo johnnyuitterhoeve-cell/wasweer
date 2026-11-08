@@ -68,6 +68,11 @@
   h3{margin:0 0 10px;font-size:1rem}
   details summary{cursor:pointer;font-weight:600}
   details ul{padding-left:18px;color:var(--muted);font-size:.92rem}
+  .install{display:flex;align-items:center;gap:12px;position:relative;padding-right:34px}
+  .install.hidden{display:none}
+  .install img{border-radius:11px;flex:none}
+  .install .it{flex:1;display:flex;flex-direction:column;line-height:1.35}
+  .install .x{position:absolute;top:6px;right:8px;border:0;background:none;font-size:1.3rem;color:var(--muted);cursor:pointer}
   @media (max-width:440px){.factors{grid-template-columns:1fr}}
 </style>
 </head>
@@ -75,6 +80,16 @@
 <main>
   <h1>Kan de was buiten?</h1>
   <p class="sub">Luchtvochtigheid, wind, temperatuur en zon in één oordeel.</p>
+
+  <div class="card install hidden" id="install">
+    <img src="icon-192.png" alt="" width="48" height="48">
+    <div class="it">
+      <b>Installeer als app</b>
+      <span class="note" id="installTxt">Zet Wasweer op je beginscherm, dan open je hem met één tik.</span>
+    </div>
+    <button class="btn" id="installBtn">Installeren</button>
+    <button class="x" id="installX" aria-label="Sluiten">×</button>
+  </div>
 
   <div class="tabs">
     <button id="tLive" class="on">Live weer</button>
@@ -337,6 +352,31 @@ seg("iSky",v=>sky=v); seg("iRain",v=>regen=v);
 /* ---------- TABS ---------- */
 function toon(w){ $("live").classList.toggle("hidden",w!=="live"); $("hand").classList.toggle("hidden",w!=="hand"); $("tLive").classList.toggle("on",w==="live"); $("tHand").classList.toggle("on",w==="hand"); }
 $("tLive").onclick=()=>toon("live"); $("tHand").onclick=()=>toon("hand");
+
+/* ---------- INSTALLEREN ALS APP ---------- */
+const alsApp = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+let installPrompt = null;
+
+if ("serviceWorker" in navigator) {
+  try { navigator.serviceWorker.register("sw.js").catch(()=>{}); } catch(e) {}
+}
+function toonInstall(){ if(!alsApp && !store.get("installWeg")) $("install").classList.remove("hidden"); }
+window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); installPrompt = e; toonInstall(); });
+window.addEventListener("appinstalled", () => $("install").classList.add("hidden"));
+if (isIOS && !alsApp) {
+  $("installTxt").innerHTML = 'Tik in Safari onderaan op <b>Deel</b> <span aria-hidden="true">(□↑)</span> en kies <b>Zet op beginscherm</b>.';
+  $("installBtn").classList.add("hidden");
+  toonInstall();
+}
+$("installBtn").onclick = async () => {
+  if (!installPrompt) return;
+  installPrompt.prompt();
+  const { outcome } = await installPrompt.userChoice;
+  installPrompt = null;
+  if (outcome === "accepted") $("install").classList.add("hidden");
+};
+$("installX").onclick = () => { $("install").classList.add("hidden"); store.set("installWeg", true); };
 
 hand();
 const saved=store.get("wasLoc");
