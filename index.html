@@ -304,9 +304,21 @@ $("zoek").onclick=zoek;
 $("q").addEventListener("keydown",e=>{ if(e.key==="Enter") zoek(); });
 $("gps").onclick=()=>{
   if(!navigator.geolocation){ liveError("Locatie is niet beschikbaar, zoek je woonplaats."); return; }
+  $("place").textContent = "📍 Locatie bepalen…";
   navigator.geolocation.getCurrentPosition(
-    p=>kies({name:"Mijn locatie", sub:"", lat:p.coords.latitude.toFixed(3), lon:p.coords.longitude.toFixed(3)}),
-    ()=>liveError("Geen toegang tot je locatie, zoek je woonplaats."));
+    async p=>{
+      const lat=+p.coords.latitude.toFixed(3), lon=+p.coords.longitude.toFixed(3);
+      let name="Mijn locatie", sub="";
+      try{
+        const r = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=nl`);
+        const j = await r.json();
+        const plaats = j.city || j.locality;
+        if(plaats){ name = plaats; sub = [j.principalSubdivision, j.countryName].filter(Boolean).join(", "); }
+      }catch(e){}
+      kies({name, sub, lat, lon});
+    },
+    ()=>{ $("place").textContent=""; liveError("Geen toegang tot je locatie, zoek je woonplaats."); },
+    {timeout:15000, maximumAge:600000});
 };
 
 /* ---------- HANDMATIG ---------- */
