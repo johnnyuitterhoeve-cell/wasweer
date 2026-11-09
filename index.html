@@ -331,16 +331,19 @@ function simuleer(slots, start){
   return res;
 }
 
-// Advies voor één dag: het LAATSTE starttijdstip dat (bijna) net zo vroeg droog is als zo vroeg mogelijk ophangen.
-// Zo zegt de app "wacht tot 10:00" als vroeger ophangen in de mist niets oplevert.
+// Advies voor één dag: wanneer kun je het best ophangen?
 function advies(slots, nu, dagOffset){
   const dag = dagnr(nu) + dagOffset, kand = [];
   for (const s of slots){
     if (dagnr(s.t) !== dag || !s.dag || s.regen || s.t + 3600000 <= nu) continue;
     const start = Math.max(s.t, nu), sim = simuleer(slots, start);
-    if (sim && sim.shirt.klaar) kand.push({ start, sim });
+    if (sim && sim.shirt.klaar) kand.push({ start, sim, s });
   }
   if (!kand.length) return null;
+  // Advies = het eerste groene uur (droogt echt goed), zodat het klopt met de kleurenbalk.
+  const groen = kand.find(k => ["ja","top"].includes(rateLvl(k.s.r, k.s.regen)));
+  if (groen) return groen;
+  // Geen groen uur: kies het laatste moment dat nog net zo snel droog is als zo vroeg mogelijk ophangen
   const alleHanddoek = kand.some(k => k.sim.handdoek.klaar);
   const eind = k => alleHanddoek ? (k.sim.handdoek.klaar ?? Infinity) : k.sim.shirt.klaar;
   const vroegst = Math.min(...kand.map(eind));
@@ -368,7 +371,7 @@ function toonLive(slots, nu){
     uitleg = sim && sim.shirt.regen ? "Er wordt regen verwacht voordat je was droog is." : "Zelfs een T-shirt wordt vandaag niet droog voor het donker. Kijk hieronder voor morgen.";
   } else {
     const { start, sim } = vandaag, sh = sim.shirt, hd = sim.handdoek;
-    const wacht = start - nu > 30*60000;
+    const wacht = start - nu > 5*60000;
     tijden = [ `droog ~${klok(sh.klaar)}`, hd.klaar ? `droog ~${klok(hd.klaar)}` : (hd.regen ? "regen ertussen" : "niet voor het donker") ];
     if (hd.klaar && hd.uren <= 3) lvl="top"; else if (hd.klaar || sh.uren <= 3) lvl="ja"; else lvl="twijfel";
     if (!hd.klaar) tips.push("Handdoeken, jeans en dikke truien halen het niet voor het donker: hang ze alleen op als je ze binnen kunt afmaken.");
