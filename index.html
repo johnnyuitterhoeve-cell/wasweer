@@ -484,7 +484,15 @@ $("tLive").onclick=()=>toon("live"); $("tHand").onclick=()=>toon("hand");
 const alsApp = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
 const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 let installPrompt = null;
-if ("serviceWorker" in navigator) { try { navigator.serviceWorker.register("sw.js").catch(()=>{}); } catch(e) {} }
+if ("serviceWorker" in navigator) {
+  try {
+    const hadController = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).then(reg => reg.update()).catch(()=>{});
+    // Nieuwe versie actief? Dan één keer verversen, zodat je meteen de nieuwste app ziet.
+    let ververst = false;
+    navigator.serviceWorker.addEventListener("controllerchange", () => { if (hadController && !ververst) { ververst = true; location.reload(); } });
+  } catch(e) {}
+}
 function toonInstall(){ if(!alsApp && !store.get("installWeg")) $("install").classList.remove("hidden"); }
 window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); installPrompt = e; toonInstall(); });
 window.addEventListener("appinstalled", () => $("install").classList.add("hidden"));
