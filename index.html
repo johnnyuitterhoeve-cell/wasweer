@@ -244,8 +244,8 @@ function renderFactoren(d, S, Ts, b){
   </div></div>`;
 }
 function renderTips(tips){ return tips.length ? `<div class="card"><h3>Tips</h3><ul class="tips">${tips.map(t=>`<li>${t}</li>`).join("")}</ul></div>` : ""; }
-function verdictHTML(lvl, titel, uitleg, tijden){
-  return `<div class="verdict v-${lvl}"><div class="lvl">${LVL_TXT[lvl]}</div><h2>${titel}</h2><p>${uitleg}</p>
+function verdictHTML(lvl, titel, uitleg, tijden, label){
+  return `<div class="verdict v-${lvl}"><div class="lvl">${label || LVL_TXT[lvl]}</div><h2>${titel}</h2><p>${uitleg}</p>
     ${tijden ? `<div class="times"><div><small>👕 T-shirt</small><b>${tijden[0]}</b></div><div><small>🛁 Handdoek</small><b>${tijden[1]}</b></div></div>` : ""}</div>`;
 }
 function drijfveer(S, b, RH){
@@ -331,66 +331,85 @@ function simuleer(slots, start){
   return res;
 }
 
+// Advies voor één dag: het LAATSTE starttijdstip dat (bijna) net zo vroeg droog is als zo vroeg mogelijk ophangen.
+// Zo zegt de app "wacht tot 10:00" als vroeger ophangen in de mist niets oplevert.
+function advies(slots, nu, dagOffset){
+  const dag = dagnr(nu) + dagOffset, kand = [];
+  for (const s of slots){
+    if (dagnr(s.t) !== dag || !s.dag || s.regen || s.t + 3600000 <= nu) continue;
+    const start = Math.max(s.t, nu), sim = simuleer(slots, start);
+    if (sim && sim.shirt.klaar) kand.push({ start, sim });
+  }
+  if (!kand.length) return null;
+  const alleHanddoek = kand.some(k => k.sim.handdoek.klaar);
+  const eind = k => alleHanddoek ? (k.sim.handdoek.klaar ?? Infinity) : k.sim.shirt.klaar;
+  const vroegst = Math.min(...kand.map(eind));
+  const ok = kand.filter(k => eind(k) <= vroegst + 20*60000);
+  return ok[ok.length-1];
+}
+
 function toonLive(slots, nu){
   const iNu = slots.findIndex(s => nu >= s.t && nu < s.t+3600000);
   if (iNu < 0){ geenLive(); return; }
   const s = slots[iNu];
   const tips = [];
+  const vandaag = s.dag ? advies(slots, nu, 0) : null;
 
-  // Oordeel voor 'nu ophangen'
-  let lvl, titel, uitleg, tijden = null;
-  const sim = simuleer(slots, nu);
-  const sh = sim.shirt, hd = sim.handdoek;
+  let lvl, titel, uitleg, tijden = null, label = null;
   if (s.regen){
     lvl="nee"; titel="Nee, het regent"; uitleg = s.kans ? `Kans op neerslag: ${s.kans}%.` : "Er valt nu neerslag.";
   } else if (s.b >= 8){
     lvl="nee"; titel="Nee, het stormt"; uitleg="Bij windkracht 8 of meer waait je was van de lijn.";
   } else if (!s.dag){
     lvl="nee"; titel="Nu niet: het is donker"; uitleg="'s Avonds en 's nachts stijgt de luchtvochtigheid en droogt er bijna niets. Kijk hieronder wanneer je het best kunt ophangen.";
-  } else if (!sh.klaar){
-    lvl="nee"; titel = sh.regen ? "Nee, er komt regen" : "Niet meer droog voor het donker";
-    uitleg = sh.regen ? "Er wordt regen verwacht voordat je was droog is." : "Zelfs een T-shirt wordt vandaag niet meer droog. Binnen drogen of een beter moment kiezen.";
+  } else if (!vandaag){
+    const sim = simuleer(slots, nu);
+    lvl="nee"; titel = sim && sim.shirt.regen ? "Nee, er komt regen" : "Vandaag wordt het niet droog";
+    uitleg = sim && sim.shirt.regen ? "Er wordt regen verwacht voordat je was droog is." : "Zelfs een T-shirt wordt vandaag niet droog voor het donker. Kijk hieronder voor morgen.";
   } else {
+    const { start, sim } = vandaag, sh = sim.shirt, hd = sim.handdoek;
+    const wacht = start - nu > 30*60000;
     tijden = [ `droog ~${klok(sh.klaar)}`, hd.klaar ? `droog ~${klok(hd.klaar)}` : (hd.regen ? "regen ertussen" : "niet voor het donker") ];
-    if (hd.klaar && hd.uren <= 3){ lvl="top"; titel="Ja, top wasweer"; }
-    else if (hd.klaar){ lvl="ja"; titel="Ja, alles wordt droog"; }
-    else if (sh.uren <= 3){ lvl="ja"; titel="Ja, voor dunne was"; tips.push("Handdoeken, jeans en dikke truien halen het niet voor het donker: hang ze alleen op als je ze binnen kunt afmaken."); }
-    else { lvl="twijfel"; titel="Kan, maar het gaat traag"; }
-    uitleg = `Nu ophangen: een T-shirt is in ongeveer ${duur(sh.uren)} droog${hd.klaar ? `, een handdoek in ${duur(hd.uren)}` : ""}. ${drijfveer(s.S, s.b, s.RH)}`;
+    if (hd.klaar && hd.uren <= 3) lvl="top"; else if (hd.klaar || sh.uren <= 3) lvl="ja"; else lvl="twijfel";
+    if (!hd.klaar) tips.push("Handdoeken, jeans en dikke truien halen het niet voor het donker: hang ze alleen op als je ze binnen kunt afmaken.");
+    const wat = hd.klaar ? "alles" : "dunne was";
+    if (wacht){
+      label = `${LVL_TXT[lvl]} vanaf ${klok(start)}`;
+      titel = `Wacht tot ${klok(start)}`;
+      const nuReden = s.RH >= 90 ? `de lucht is nu bijna verzadigd (${Math.round(s.RH)}%)` : s.S < 35 ? "er is nu nog geen zon" : "het droogt nu nog traag";
+      uitleg = `Nu ophangen heeft weinig zin: ${nuReden}. Hang je om ${klok(start)} op, dan wordt ${wat} droog: een T-shirt rond ${klok(sh.klaar)}${hd.klaar ? `, een handdoek rond ${klok(hd.klaar)}` : ""}.`;
+    } else {
+      titel = lvl==="top" ? "Ja, top wasweer" : hd.klaar ? "Ja, alles wordt droog" : lvl==="ja" ? "Ja, voor dunne was" : "Kan, maar het gaat traag";
+      uitleg = `Nu ophangen: een T-shirt is in ongeveer ${duur(sh.uren)} droog${hd.klaar ? `, een handdoek in ${duur(hd.uren)}` : ""}. ${drijfveer(s.S, s.b, s.RH)}`;
+    }
   }
 
-  // Tips
   if (s.Ts < 0 && lvl !== "nee") tips.push("Het vriest: de was bevriest en het ijs verdampt langzaam. Haal hem voorzichtig binnen (bevroren stof kan knakken) en laat hem binnen afdrogen.");
   if (s.b === 7) tips.push("Windkracht 7: gebruik extra knijpers en hang lakens dubbel over de lijn.");
-  if (s.S >= 90 && lvl !== "nee") tips.push("Volle zon: hang donkere en felle kleuren binnenstebuiten tegen verbleken, en hang de was met de breedste kant naar de zon.");
+  if (lvl !== "nee" && slots.slice(iNu, iNu+8).some(x => x.S >= 90)) tips.push("Er komt volle zon: hang donkere en felle kleuren binnenstebuiten tegen verbleken, en hang de was met de breedste kant naar de zon.");
   const donker = slots.find(x => x.t > nu && !x.dag);
   if (lvl !== "nee" && donker && s.dag) tips.push(`Haal de was binnen vóór het donker wordt (rond ${klok(donker.t)}): daarna wordt de lucht vochtig en kan dauw hem weer nat maken.`);
 
-  $("liveOut").innerHTML = verdictHTML(lvl, titel, uitleg, tijden)
+  $("liveOut").innerHTML = verdictHTML(lvl, titel, uitleg, tijden, label)
     + renderFactoren({T:s.T, RH:s.RH, dag:s.dag}, s.S, s.Ts, s.b)
     + renderTips(tips)
     + beste(slots, nu) + strip(slots, iNu);
 }
 
-// Beste ophangmoment in de komende ~36 uur (alleen hele uren bij daglicht)
+// Ophangadvies voor vandaag en morgen
 function beste(slots, nu){
-  let best = null;
-  for (const s of slots){
-    if (s.t < nu - 1800000 || s.t > nu + 36*3600000 || !s.dag || s.regen) continue;
-    const start = Math.max(s.t, nu), sim = simuleer(slots, start);
-    if (!sim || !sim.shirt.klaar) continue;
-    // voorkeur: handdoek droog (snelst eerst), anders shirt snelst
-    const score = sim.handdoek.klaar ? sim.handdoek.uren : 100 + sim.shirt.uren;
-    if (!best || score < best.score - 0.05) best = { start, sim, score };
-  }
-  let txt, sub = "";
-  if (!best) txt = "De komende anderhalve dag is er geen goed moment om buiten te drogen.";
-  else {
-    const { start, sim } = best;
-    txt = `Beste moment om op te hangen: ${dagNaam(start,nu)} ${klok(start)}`;
-    sub = `👕 droog ~${klok(sim.shirt.klaar)} · 🛁 ${sim.handdoek.klaar ? "droog ~"+klok(sim.handdoek.klaar) : "niet voor het donker"}`;
-  }
-  return `<div class="card"><h3>Wanneer ophangen?</h3><p class="best">${txt}</p>${sub?`<p class="note" style="margin:0">${sub}</p>`:""}</div>`;
+  const regel = (naam, a) => {
+    if (!a) return `<p style="margin:0 0 8px"><b>${naam}:</b> <span class="note">geen goed moment</span></p>`;
+    const { start, sim } = a;
+    return `<p style="margin:0 0 8px"><b>${naam}:</b> ophangen om ${klok(start)}<br><span class="note">👕 droog ~${klok(sim.shirt.klaar)} · 🛁 ${sim.handdoek.klaar ? "droog ~"+klok(sim.handdoek.klaar) : "niet voor het donker"}</span></p>`;
+  };
+  const isDonker = !slots.find(s => nu >= s.t && nu < s.t+3600000)?.dag;
+  const vandaag = advies(slots, nu, 0);
+  const zonsopNog = slots.some(s => dagnr(s.t)===dagnr(nu) && s.t > nu && s.dag);
+  let html = "";
+  if (!isDonker || zonsopNog) html += regel("Vandaag", vandaag);
+  html += regel("Morgen", advies(slots, nu, 1));
+  return `<div class="card"><h3>Wanneer ophangen?</h3>${html}</div>`;
 }
 
 function strip(slots, iNu){
