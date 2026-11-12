@@ -49,6 +49,15 @@
   .v-twijfel .times div{background:rgba(0,0,0,.08)}
   .times small{display:block;opacity:.85;font-size:.8rem}
   .times b{font-size:1.15rem}
+  .plan{border:2px solid var(--accent);padding:20px}
+  .plan h3{font-family:Fraunces,Georgia,serif;font-size:1.45rem;margin:0 0 12px}
+  .dag + .dag{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+  .dagnaam{font-weight:600;font-size:.8rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:8px}
+  .opties{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .optie{background:var(--bg);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:2px;font-size:.9rem}
+  .optie small{color:var(--muted);font-size:.8rem}
+  .optie b{font-size:1.15rem;margin-bottom:4px}
+  .times b{font-size:1rem}
   .factors{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .f{border:1px solid var(--line);border-radius:12px;padding:12px}
   .f .k{font-size:.8rem;color:var(--muted)}
@@ -56,7 +65,6 @@
   .f .n{font-size:.85rem;display:flex;gap:6px;align-items:flex-start}
   .dot{width:9px;height:9px;border-radius:50%;flex:none;margin-top:6px}
   .d-good{background:var(--ja)} .d-ok{background:var(--twijfel)} .d-bad{background:var(--nee)}
-  .tips{margin:0;padding-left:18px} .tips li{margin:4px 0}
   .hours{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px}
   .h{flex:none;width:58px;text-align:center;font-size:.78rem;color:var(--muted)}
   .h .bar{height:38px;border-radius:8px;margin:4px 0}
@@ -82,6 +90,7 @@
   .install .it{flex:1;display:flex;flex-direction:column;line-height:1.35}
   .install .x{position:absolute;top:6px;right:8px;border:0;background:none;font-size:1.3rem;color:var(--muted);cursor:pointer}
   @media (max-width:440px){.factors{grid-template-columns:1fr}}
+  @media (max-width:360px){.opties{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -161,7 +170,7 @@
     </ul>
     <p>Uitgangspunt: een goed gecentrifugeerd T-shirt en een badhanddoek, vrij hangend in een gewone tuin. De tijden zijn schattingen. In een beschutte hoek of met dubbel hangende stof duurt het langer.</p>
   </details>
-  <p class="note" style="text-align:center">Wasdrogen · versie 7 (9 nov)</p>
+  <p class="note" style="text-align:center">Wasdrogen · versie 8 (12 nov)</p>
 </main>
 
 <script>
@@ -221,7 +230,7 @@ const LVL_TXT = {nee:"Niet doen",twijfel:"Twijfelgeval",ja:"Goed",top:"Ideaal"};
 const rateLvl = (r, regen) => regen ? "nee" : r >= 0.25 ? "top" : r >= 0.12 ? "ja" : r >= 0.05 ? "twijfel" : "nee";
 
 /* ================= TEKSTJES ================= */
-const duur = u => { if (!isFinite(u)) return "—"; const m = Math.max(10, Math.round(u*60/5)*5); return m<60 ? `${m} min` : `${Math.floor(m/60)} u${m%60?" "+(m%60)+" min":""}`; };
+const duur = u => { if (!isFinite(u)) return "droogt niet"; if (u > 12) return "meer dan 12 u"; const m = Math.max(10, Math.round(u*60/5)*5); return m<60 ? `${m} min` : `${Math.floor(m/60)} u${m%60?" "+(m%60)+" min":""}`; };
 
 function factoren(d, S, Ts, b){
   const f = {};
@@ -244,10 +253,11 @@ function renderFactoren(d, S, Ts, b){
     ${fac("sun","Zon",zonLabel(S,d.dag))}
   </div></div>`;
 }
-function renderTips(tips){ return tips.length ? `<div class="card"><h3>Tips</h3><ul class="tips">${tips.map(t=>`<li>${t}</li>`).join("")}</ul></div>` : ""; }
 function verdictHTML(lvl, titel, uitleg, tijden, label){
   return `<div class="verdict v-${lvl}"><div class="lvl">${label || LVL_TXT[lvl]}</div><h2>${titel}</h2><p>${uitleg}</p>
-    ${tijden ? `<div class="times"><div><small>👕 T-shirt</small><b>${tijden[0]}</b></div><div><small>🛁 Handdoek</small><b>${tijden[1]}</b></div></div>` : ""}</div>`;
+    ${tijden ? `<div class="times">
+      <div><small>☀️ In de zon</small><b>👕 ${tijden.zon[0]}</b><br><b>🛁 ${tijden.zon[1]}</b></div>
+      <div><small>🌳 In de schaduw</small><b>👕 ${tijden.schaduw[0]}</b><br><b>🛁 ${tijden.schaduw[1]}</b></div></div>` : ""}</div>`;
 }
 function drijfveer(S, b, RH){
   if (S >= 90) return "De zon levert nu de meeste droogkracht.";
@@ -305,14 +315,15 @@ function prepareer(j, lat, lon){
     const S = zonOpStof(h.direct_normal_irradiance[i+1] ?? 0, h.diffuse_radiation[i+1] ?? 0, elev); // straling = gemiddelde van het afgelopen uur
     const d = { T:avg("temperature_2m"), RH:avg("relative_humidity_2m"), windKmh:avg("wind_speed_10m"), cloud:avg("cloud_cover") };
     const { r, Ts } = verdamping({ ...d, S });
+    const rS = verdamping({ ...d, S: zonOpStof(0, h.diffuse_radiation[i+1] ?? 0, elev) }).r;   // in de schaduw: alleen diffuus licht
     const regen = (h.precipitation[i+1] ?? 0) >= 0.2 || (h.precipitation_probability[i+1] ?? 0) >= 70;
-    slots.push({ t, ...d, S, r, Ts, elev, dag: elev > -1, regen, kans: h.precipitation_probability[i+1] ?? 0, b: bft(d.windKmh) });
+    slots.push({ t, ...d, S, r, rS, Ts, elev, dag: elev > -1, regen, kans: h.precipitation_probability[i+1] ?? 0, b: bft(d.windKmh) });
   }
   return slots;
 }
 
 // Simuleer drogen vanaf moment 'start' (ms). Geeft droogmoment per item, of reden waarom niet.
-function simuleer(slots, start){
+function simuleer(slots, start, key='r'){
   let i = slots.findIndex(s => start >= s.t && start < s.t + 3600000);
   if (i < 0) return null;
   const res = {};
@@ -321,9 +332,9 @@ function simuleer(slots, start){
     for (let k=i; k<slots.length && t < start + 30*3600000; k++){
       const s = slots[k], eind = s.t + 3600000, frac = (eind - t)/3600000;
       if (s.regen){ W = W0; regenNa = true; t = eind; continue; }
-      if (!s.dag && s.r < 0.03) nacht = true;            // in het donker droogt het (bijna) niet meer
+      if (!s.dag && s[key] < 0.03) nacht = true;            // in het donker droogt het (bijna) niet meer
       if (nacht){ break; }
-      const r = s.r;
+      const r = s[key];
       if (r*frac >= W){ klaar = t + W/r*3600000; break; }
       W = Math.min(W0, W - r*frac); t = eind;
     }
@@ -333,16 +344,16 @@ function simuleer(slots, start){
 }
 
 // Advies voor één dag: wanneer kun je het best ophangen?
-function advies(slots, nu, dagOffset){
+function advies(slots, nu, dagOffset, key='r'){
   const dag = dagnr(nu) + dagOffset, kand = [];
   for (const s of slots){
     if (dagnr(s.t) !== dag || !s.dag || s.regen || s.t + 3600000 <= nu) continue;
-    const start = Math.max(s.t, nu), sim = simuleer(slots, start);
+    const start = Math.max(s.t, nu), sim = simuleer(slots, start, key);
     if (sim && sim.shirt.klaar) kand.push({ start, sim, s });
   }
   if (!kand.length) return null;
   // Advies = het eerste groene uur (droogt echt goed), zodat het klopt met de kleurenbalk.
-  const groen = kand.find(k => ["ja","top"].includes(rateLvl(k.s.r, k.s.regen)));
+  const groen = kand.find(k => ["ja","top"].includes(rateLvl(k.s[key], k.s.regen)));
   if (groen) return groen;
   // Geen groen uur: kies het laatste moment dat nog net zo snel droog is als zo vroeg mogelijk ophangen
   const alleHanddoek = kand.some(k => k.sim.handdoek.klaar);
@@ -356,7 +367,6 @@ function toonLive(slots, nu){
   const iNu = slots.findIndex(s => nu >= s.t && nu < s.t+3600000);
   if (iNu < 0){ geenLive(); return; }
   const s = slots[iNu];
-  const tips = [];
   const vandaag = s.dag ? advies(slots, nu, 0) : null;
 
   let lvl, titel, uitleg, tijden = null, label = null;
@@ -373,47 +383,38 @@ function toonLive(slots, nu){
   } else {
     const { start, sim } = vandaag, sh = sim.shirt, hd = sim.handdoek;
     const wacht = start - nu > 5*60000;
-    tijden = [ `droog ~${klok(sh.klaar)}`, hd.klaar ? `droog ~${klok(hd.klaar)}` : (hd.regen ? "regen ertussen" : "niet voor het donker") ];
     if (hd.klaar && hd.uren <= 3) lvl="top"; else if (hd.klaar || sh.uren <= 3) lvl="ja"; else lvl="twijfel";
-    if (!hd.klaar) tips.push("Handdoeken, jeans en dikke truien halen het niet voor het donker: hang ze alleen op als je ze binnen kunt afmaken.");
-    const wat = hd.klaar ? "alles" : "dunne was";
     if (wacht){
       label = `${LVL_TXT[lvl]} vanaf ${klok(start)}`;
       titel = `Wacht tot ${klok(start)}`;
       const nuReden = s.RH >= 90 ? `de lucht is nu bijna verzadigd (${Math.round(s.RH)}%)` : s.S < 35 ? "er is nu nog geen zon" : "het droogt nu nog traag";
-      uitleg = `Nu ophangen heeft weinig zin: ${nuReden}. Hang je om ${klok(start)} op, dan wordt ${wat} droog: een T-shirt rond ${klok(sh.klaar)}${hd.klaar ? `, een handdoek rond ${klok(hd.klaar)}` : ""}.`;
+      uitleg = `Nu ophangen heeft weinig zin: ${nuReden}. Vanaf ${klok(start)} droogt het goed.`;
     } else {
       titel = lvl==="top" ? "Ja, top wasweer" : hd.klaar ? "Ja, alles wordt droog" : lvl==="ja" ? "Ja, voor dunne was" : "Kan, maar het gaat traag";
-      uitleg = `Nu ophangen: een T-shirt is in ongeveer ${duur(sh.uren)} droog${hd.klaar ? `, een handdoek in ${duur(hd.uren)}` : ""}. ${drijfveer(s.S, s.b, s.RH)}`;
+      uitleg = `${drijfveer(s.S, s.b, s.RH)} Hieronder zie je wanneer je was droog is, in de zon en in de schaduw.`.trim();
     }
   }
 
-  if (s.Ts < 0 && lvl !== "nee") tips.push("Het vriest: de was bevriest en het ijs verdampt langzaam. Haal hem voorzichtig binnen (bevroren stof kan knakken) en laat hem binnen afdrogen.");
-  if (s.b === 7) tips.push("Windkracht 7: gebruik extra knijpers en hang lakens dubbel over de lijn.");
-  if (lvl !== "nee" && slots.slice(iNu, iNu+8).some(x => x.S >= 90)) tips.push("Er komt volle zon: hang donkere en felle kleuren binnenstebuiten tegen verbleken, en hang de was met de breedste kant naar de zon.");
-  const donker = slots.find(x => x.t > nu && !x.dag);
-  if (lvl !== "nee" && donker && s.dag) tips.push(`Haal de was binnen vóór het donker wordt (rond ${klok(donker.t)}): daarna wordt de lucht vochtig en kan dauw hem weer nat maken.`);
-
-  $("liveOut").innerHTML = verdictHTML(lvl, titel, uitleg, tijden, label)
+  $("liveOut").innerHTML = verdictHTML(lvl, titel, uitleg, null, label)
+    + beste(slots, nu)
     + renderFactoren({T:s.T, RH:s.RH, dag:s.dag}, s.S, s.Ts, s.b)
-    + renderTips(tips)
-    + beste(slots, nu) + strip(slots, iNu);
+    + strip(slots, iNu);
 }
 
-// Ophangadvies voor vandaag en morgen
+// Ophangadvies voor vandaag en morgen, in de zon en in de schaduw
 function beste(slots, nu){
-  const regel = (naam, a) => {
-    if (!a) return `<p style="margin:0 0 8px"><b>${naam}:</b> <span class="note">geen goed moment</span></p>`;
+  const optie = (icoon, naam, a) => {
+    if (!a) return `<div class="optie"><small>${icoon} ${naam}</small><b>Geen goed moment</b><span class="note">wordt niet droog voor het donker</span></div>`;
     const { start, sim } = a;
-    return `<p style="margin:0 0 8px"><b>${naam}:</b> ophangen om ${klok(start)}<br><span class="note">👕 droog ~${klok(sim.shirt.klaar)} · 🛁 ${sim.handdoek.klaar ? "droog ~"+klok(sim.handdoek.klaar) : "niet voor het donker"}</span></p>`;
+    const nu5 = start - nu <= 5*60000;
+    return `<div class="optie"><small>${icoon} ${naam}</small><b>${nu5 ? "Nu ophangen" : "Ophangen om "+klok(start)}</b>
+      <span>👕 T-shirt droog ~${klok(sim.shirt.klaar)}</span>
+      <span>🛁 Handdoek ${sim.handdoek.klaar ? "droog ~"+klok(sim.handdoek.klaar) : (sim.handdoek.regen ? "regen ertussen" : "niet droog voor het donker")}</span></div>`;
   };
-  const isDonker = !slots.find(s => nu >= s.t && nu < s.t+3600000)?.dag;
-  const vandaag = advies(slots, nu, 0);
-  const zonsopNog = slots.some(s => dagnr(s.t)===dagnr(nu) && s.t > nu && s.dag);
-  let html = "";
-  if (!isDonker || zonsopNog) html += regel("Vandaag", vandaag);
-  html += regel("Morgen", advies(slots, nu, 1));
-  return `<div class="card"><h3>Wanneer ophangen?</h3>${html}</div>`;
+  const dag = (naam, off) => `<div class="dag"><div class="dagnaam">${naam}</div><div class="opties">
+    ${optie("☀️","In de zon", advies(slots, nu, off, "r"))}${optie("🌳","In de schaduw", advies(slots, nu, off, "rS"))}</div></div>`;
+  const nogLicht = slots.some(s => dagnr(s.t)===dagnr(nu) && s.t + 3600000 > nu && s.dag);
+  return `<div class="card plan"><h3>Wanneer ophangen?</h3>${nogLicht ? dag("Vandaag",0) : ""}${dag("Morgen",1)}</div>`;
 }
 
 function strip(slots, iNu){
@@ -457,21 +458,23 @@ function hand(){
   const dif = (sky==="grijs"?0.12:0.08) * 1353 * Math.sin(elevH*Math.PI/180) + (sky==="half"?60:0);
   const S = zonOpStof(dni, dif, elevH), cloud = sky==="zon"?10:sky==="half"?50:95;
   const { r, Ts } = verdamping({ T, RH, windKmh:BFT_KMH[b], S, cloud });
-  const uSh = r>0 ? WATER.shirt/r : Infinity, uHd = r>0 ? WATER.handdoek/r : Infinity;
-  let lvl, titel, uitleg, tips=[];
+  const rS = verdamping({ T, RH, windKmh:BFT_KMH[b], S: zonOpStof(0, dif, elevH), cloud }).r;
+  const uren = (w, x) => x>0 ? w/x : Infinity;
+  const uSh = uren(WATER.shirt, r), uHd = uren(WATER.handdoek, r);
+  let lvl, titel, uitleg;
   if (regenH){ lvl="nee"; titel="Nee, het regent"; uitleg="Bij regen wordt je was alleen maar natter."; }
   else if (b>=8){ lvl="nee"; titel="Nee, het stormt"; uitleg="Bij windkracht 8 of meer waait je was van de lijn."; }
   else {
     const dagUren = elevH>=45 ? 10 : elevH>=25 ? 7 : 4;   // bruikbare droog-uren per seizoen
     lvl = uHd<=Math.min(3,dagUren) ? "top" : uHd<=dagUren ? "ja" : uSh<=Math.min(3,dagUren) ? "ja" : uSh<=dagUren ? "twijfel" : "nee";
     titel = {top:"Ja, top wasweer", ja: uHd<=dagUren ? "Ja, alles wordt droog" : "Ja, voor dunne was", twijfel:"Kan, maar het gaat traag", nee:"Nee, dit droogt nauwelijks"}[lvl];
-    uitleg = `Als het zo blijft: een T-shirt is in ongeveer ${duur(uSh)} droog, een handdoek in ${duur(uHd)}. ${drijfveer(S,b,RH)}`;
-    if (uHd > dagUren && uSh <= dagUren) tips.push(`Handdoeken en jeans halen het waarschijnlijk niet voor het donker (in dit seizoen heb je zo'n ${dagUren} goede droog-uren). Maak ze binnen af.`);
+    uitleg = `Zo lang duurt het als het weer zo blijft. ${drijfveer(S,b,RH)}`.trim();
   }
-  if (Ts<0 && !regenH) tips.push("Het vriest: de was bevriest en het ijs verdampt langzaam (sublimatie). Laat hem binnen afdrogen.");
-  if (sky==="zon" && lvl!=="nee") tips.push("Volle zon: hang donkere en felle kleuren binnenstebuiten tegen verbleken.");
-  $("handOut").innerHTML = verdictHTML(lvl, titel, uitleg, lvl==="nee"&&regenH ? null : [duur(uSh), duur(uHd)])
-    + renderFactoren({T, RH, dag:true}, S, Ts, b) + renderTips(tips);
+  const tijden = (regenH || b>=8) ? null : {
+    zon: [duur(uSh), duur(uHd)],
+    schaduw: [duur(uren(WATER.shirt, rS)), duur(uren(WATER.handdoek, rS))]
+  };
+  $("handOut").innerHTML = verdictHTML(lvl, titel, uitleg, tijden) + renderFactoren({T, RH, dag:true}, S, Ts, b);
 }
 ["iRh","iBft","iTemp"].forEach(id=>$(id).addEventListener("input",hand));
 function seg(id,cb){ $(id).querySelectorAll("button").forEach(b=>b.onclick=()=>{ $(id).querySelectorAll("button").forEach(x=>x.classList.remove("on")); b.classList.add("on"); cb(b.dataset.v); hand(); }); }
