@@ -170,7 +170,7 @@
     </ul>
     <p>Uitgangspunt: een goed gecentrifugeerd T-shirt en een badhanddoek, vrij hangend in een gewone tuin. De tijden zijn schattingen. In een beschutte hoek of met dubbel hangende stof duurt het langer.</p>
   </details>
-  <p class="note" style="text-align:center">Wasdrogen · versie 10 (13 nov)</p>
+  <p class="note" style="text-align:center">Wasdrogen · versie 11 (13 nov)</p>
 </main>
 
 <script>
@@ -241,7 +241,7 @@ const LVL_TXT = {nee:"Niet doen",twijfel:"Twijfelgeval",ja:"Goed",top:"Ideaal"};
 const rateLvl = (r, regen) => regen ? "nee" : r >= 0.25 ? "top" : r >= 0.12 ? "ja" : r >= 0.05 ? "twijfel" : "nee";
 
 /* ================= TEKSTJES ================= */
-const duur = u => { if (!isFinite(u)) return "droogt niet"; if (u > 12) return "meer dan 12 u"; const m = Math.max(10, Math.round(u*60/5)*5); return m<60 ? `${m} min` : `${Math.floor(m/60)} u${m%60?" "+(m%60)+" min":""}`; };
+const duur = u => { if (!isFinite(u)) return "droogt niet"; if (u > 12) return "meer dan 12 u"; const m = Math.max(15, Math.ceil(u*60/15)*15); return m<60 ? `${m} min` : `${Math.floor(m/60)} u${m%60?" "+(m%60)+" min":""}`; };
 
 function factoren(d, S, Ts, b){
   const f = {};
@@ -283,6 +283,8 @@ const store = { get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){r
 function liveError(msg){ const e=$("liveErr"); e.textContent=msg; e.classList.remove("hidden"); }
 let TZ = 0; // utc-offset in seconden
 const klok = ms => { const d=new Date(ms+TZ*1000); return String(d.getUTCHours()).padStart(2,"0")+":"+String(d.getUTCMinutes()).padStart(2,"0"); };
+// Droogtijd afgerond naar boven op het kwartier (nooit te vroeg beloven)
+const klokRond = ms => klok(Math.ceil(ms/900000)*900000);
 const dagnr = ms => Math.floor((ms+TZ*1000)/86400000);
 const dagNaam = (ms, nu) => { const v=dagnr(ms)-dagnr(nu); return v===0?"vandaag":v===1?"morgen":"overmorgen"; };
 
@@ -432,7 +434,7 @@ function waaromNiet(slots, nu, off, key){
 
 // Ophangadvies per dag: één advies dat zon en schaduw combineert
 function beste(slots, nu){
-  const handdoekTxt = sim => sim.handdoek.klaar ? "droog ~"+klok(sim.handdoek.klaar)
+  const handdoekTxt = sim => sim.handdoek.klaar ? "droog rond "+klokRond(sim.handdoek.klaar)
     : sim.handdoek.regen ? "regen ertussen" : sim.handdoek.klam ? "blijft klam" : "niet droog voor het donker";
   const ophang = a => (a.start - nu <= 5*60000) ? "nu" : "om "+klok(a.start);
   const redenTxt = r => r==="klam" ? "blijft hij klam, de lucht is te vochtig" : r==="regen" ? "komt er regen tussendoor" : "wordt hij niet droog voor het donker";
@@ -447,7 +449,7 @@ function beste(slots, nu){
       extra = r==="klam" ? "De lucht is te vochtig: je was droogt op, maar blijft klam. Ook in de zon." : r==="regen" ? "Er komt regen tussendoor." : "Je was wordt niet droog voor het donker.";
     } else {
       const a = zon || schaduw;                 // zon is altijd minstens zo goed; schaduw alleen als vangnet
-      details = `<span>👕 T-shirt droog ~${klok(a.sim.shirt.klaar)}</span><span>🛁 Handdoek ${handdoekTxt(a.sim)}</span>`;
+      details = `<span>👕 T-shirt droog rond ${klokRond(a.sim.shirt.klaar)}</span><span>🛁 Handdoek ${handdoekTxt(a.sim)}</span>`;
       if (!schaduw){
         soort = "zon";
         kop = `☀️ Hang je was in de zon, ${ophang(a)}`;
@@ -457,7 +459,7 @@ function beste(slots, nu){
         if (verschil > 1){
           soort = "zon";
           kop = `☀️ Liefst in de zon, ${ophang(a)}`;
-          extra = `In de schaduw kan ook, maar dan is een T-shirt pas rond ${klok(schaduw.sim.shirt.klaar)} droog.`;
+          extra = `In de schaduw kan ook, maar dan is een T-shirt pas rond ${klokRond(schaduw.sim.shirt.klaar)} droog.`;
         } else {
           soort = "beide";
           kop = `👍 Zon of schaduw, ${ophang(a)}`;
