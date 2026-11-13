@@ -39,14 +39,50 @@
   .results button{text-align:left;border:0;background:transparent;padding:8px 10px;border-radius:8px;font:inherit;color:var(--ink);cursor:pointer}
   .results button:hover{background:var(--bg)}
   .place{font-size:.9rem;color:var(--muted);margin-top:8px}
-  .verdict{border-radius:16px;padding:22px 20px;color:#fff;margin-bottom:14px}
-  .verdict .lvl{font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;opacity:.85;font-weight:600}
-  .verdict h2{font-family:Fraunces,Georgia,serif;font-size:1.9rem;margin:4px 0 6px;line-height:1.15}
-  .verdict p{margin:0;opacity:.95}
-  .v-top{background:var(--top)} .v-ja{background:var(--ja)} .v-twijfel{background:var(--twijfel);color:#2a1f00} .v-nee{background:var(--nee)}
+  .verdict{position:relative;overflow:hidden;border-radius:16px;padding:22px 20px;color:#fff;margin-bottom:14px;min-height:150px;transition:background .6s}
+  .verdict > :not(.sky){position:relative;z-index:1}
+  .verdict h2{font-family:Fraunces,Georgia,serif;font-size:1.9rem;margin:8px 0 6px;line-height:1.15;max-width:78%}
+  .verdict p{margin:0;opacity:.95;max-width:88%}
+  .pill{display:inline-block;font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;font-weight:700;padding:4px 10px;border-radius:99px;color:#fff;box-shadow:0 1px 4px rgba(0,0,0,.15)}
+  .p-top{background:var(--top)} .p-ja{background:var(--ja)} .p-twijfel{background:#d18f0f} .p-nee{background:var(--nee)}
   .times{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
-  .times div{background:rgba(255,255,255,.18);border-radius:12px;padding:10px 12px}
-  .v-twijfel .times div{background:rgba(0,0,0,.08)}
+  .times div{background:rgba(255,255,255,.2);border-radius:12px;padding:10px 12px;backdrop-filter:blur(2px)}
+
+  /* --- weer-achtergronden --- */
+  .sky{position:absolute;inset:0;pointer-events:none;z-index:0}
+  .w-zon{background:linear-gradient(160deg,#ffe07a 0%,#ffbe3b 60%,#ff9f2e 100%);color:#3b2500}
+  .w-half{background:linear-gradient(160deg,#9fd3ef 0%,#f6d77a 100%);color:#22313a}
+  .w-wolk{background:linear-gradient(160deg,#9aabb8 0%,#6f8494 100%)}
+  .w-regen{background:linear-gradient(160deg,#53687c 0%,#2e4152 100%)}
+  .w-nacht{background:linear-gradient(160deg,#0d1730 0%,#1d2c4f 100%)}
+  .w-mist{background:linear-gradient(160deg,#c3c9cc 0%,#9ea7ac 100%);color:#22313a}
+  .w-vorst{background:linear-gradient(160deg,#dff1fb 0%,#9cc9e4 100%);color:#16324a}
+  .w-zon .times div,.w-half .times div,.w-mist .times div,.w-vorst .times div{background:rgba(255,255,255,.45)}
+
+  .zon{position:absolute;top:-30px;right:-30px;width:150px;height:150px;border-radius:50%;
+    background:radial-gradient(circle,#fff6c4 0%,#ffd23f 45%,rgba(255,210,63,0) 70%);animation:gloei 4s ease-in-out infinite}
+  .stralen{position:absolute;top:-75px;right:-75px;width:240px;height:240px;border-radius:50%;
+    background:repeating-conic-gradient(rgba(255,255,255,.35) 0 6deg,transparent 6deg 24deg);
+    -webkit-mask:radial-gradient(circle,transparent 30%,#000 32%,transparent 70%);mask:radial-gradient(circle,transparent 30%,#000 32%,transparent 70%);
+    animation:draai 40s linear infinite}
+  .w-half .zon{opacity:.9}
+  .wolk{position:absolute;width:140px;height:44px;border-radius:44px;background:rgba(255,255,255,.75);filter:blur(1px);animation:drijf linear infinite}
+  .wolk::before,.wolk::after{content:"";position:absolute;background:inherit;border-radius:50%}
+  .wolk::before{width:60px;height:60px;top:-28px;left:22px} .wolk::after{width:76px;height:76px;top:-40px;left:56px}
+  .w-wolk .wolk,.w-regen .wolk{background:rgba(255,255,255,.28)}
+  .druppel{position:absolute;top:-24px;width:2px;height:18px;border-radius:2px;background:linear-gradient(transparent,rgba(210,230,255,.85));animation:val linear infinite}
+  .ster{position:absolute;width:2px;height:2px;border-radius:50%;background:#fff;animation:flonker ease-in-out infinite}
+  .maan{position:absolute;top:18px;right:24px;width:46px;height:46px;border-radius:50%;box-shadow:12px 6px 0 0 #f4ecc8;transform:rotate(-20deg);filter:drop-shadow(0 0 8px rgba(244,236,200,.5))}
+  .mistband{position:absolute;left:-40%;width:180%;height:26px;border-radius:30px;background:rgba(255,255,255,.35);filter:blur(6px);animation:mist ease-in-out infinite alternate}
+  .vlok{position:absolute;top:-10px;color:#fff;font-size:12px;animation:sneeuw linear infinite;text-shadow:0 0 3px rgba(80,130,170,.6)}
+  @keyframes gloei{50%{transform:scale(1.08);opacity:.9}}
+  @keyframes draai{to{transform:rotate(360deg)}}
+  @keyframes drijf{from{transform:translateX(-180px)}to{transform:translateX(760px)}}
+  @keyframes val{to{transform:translateY(260px)}}
+  @keyframes flonker{50%{opacity:.2}}
+  @keyframes mist{to{transform:translateX(18%)}}
+  @keyframes sneeuw{to{transform:translateY(240px) translateX(20px)}}
+  @media (prefers-reduced-motion: reduce){.sky *{animation:none!important}}
   .times small{display:block;opacity:.85;font-size:.8rem}
   .times b{font-size:1.15rem}
   .plan{border:2px solid var(--accent);padding:20px}
@@ -170,7 +206,7 @@
     </ul>
     <p>Uitgangspunt: een goed gecentrifugeerd T-shirt en een badhanddoek, vrij hangend in een gewone tuin. De tijden zijn schattingen. In een beschutte hoek of met dubbel hangende stof duurt het langer.</p>
   </details>
-  <p class="note" style="text-align:center">Wasdrogen · versie 11 (13 nov)</p>
+  <p class="note" style="text-align:center">Wasdrogen · versie 12 (13 nov)</p>
 </main>
 
 <script>
@@ -264,8 +300,32 @@ function renderFactoren(d, S, Ts, b){
     ${fac("sun","Zon",zonLabel(S,d.dag))}
   </div></div>`;
 }
-function verdictHTML(lvl, titel, uitleg, tijden, label){
-  return `<div class="verdict v-${lvl}"><div class="lvl">${label || LVL_TXT[lvl]}</div><h2>${titel}</h2><p>${uitleg}</p>
+// Achtergrond die meebeweegt met het weer
+function weerSoort({regen, dag, S, cloud, RH, b, T}){
+  if (regen) return "regen";
+  if (!dag) return "nacht";
+  if (T <= 0) return "vorst";
+  if (RH >= 97 && b <= 2) return "mist";
+  if (S >= 90 || cloud < 30) return "zon";
+  if (S >= 35 || cloud < 70) return "half";
+  return "wolk";
+}
+function luchtHTML(w){
+  const rnd = (i, m) => { const x = Math.sin(i*12.9898 + m*78.233)*43758.5453; return (x - Math.floor(x)) * m; };   // vaste 'willekeur', zodat het niet verspringt
+  let x = "";
+  if (w === "zon") x = `<div class="stralen"></div><div class="zon"></div>`;
+  if (w === "half") x = `<div class="zon"></div>` + [0,1].map(i=>`<div class="wolk" style="top:${30+i*48}px;animation-duration:${38+i*14}s;animation-delay:-${i*17}s;transform:scale(${.8+i*.2})"></div>`).join("");
+  if (w === "wolk") x = [0,1,2].map(i=>`<div class="wolk" style="top:${10+i*45}px;animation-duration:${30+i*12}s;animation-delay:-${i*11}s"></div>`).join("");
+  if (w === "regen") x = [0,1].map(i=>`<div class="wolk" style="top:${-14+i*20}px;animation-duration:${45+i*15}s;animation-delay:-${i*20}s"></div>`).join("")
+       + Array.from({length:45},(_,i)=>`<div class="druppel" style="left:${rnd(i+1,100)}%;animation-duration:${.55+rnd(i+7,.5)}s;animation-delay:-${rnd(i+3,1)}s"></div>`).join("");
+  if (w === "nacht") x = `<div class="maan"></div>` + Array.from({length:30},(_,i)=>`<div class="ster" style="left:${rnd(i+1,100)}%;top:${rnd(i+11,100)}%;animation-duration:${2+rnd(i+5,3)}s;animation-delay:-${rnd(i+2,3)}s"></div>`).join("");
+  if (w === "mist") x = [0,1,2,3].map(i=>`<div class="mistband" style="top:${15+i*40}px;animation-duration:${7+i*2}s"></div>`).join("");
+  if (w === "vorst") x = `<div class="zon" style="opacity:.6"></div>` + Array.from({length:18},(_,i)=>`<div class="vlok" style="left:${rnd(i+1,100)}%;animation-duration:${5+rnd(i+4,4)}s;animation-delay:-${rnd(i+9,6)}s">❄</div>`).join("");
+  return `<div class="sky" aria-hidden="true">${x}</div>`;
+}
+
+function verdictHTML(lvl, titel, uitleg, tijden, label, weer="wolk"){
+  return `<div class="verdict w-${weer}">${luchtHTML(weer)}<div><span class="pill p-${lvl}">${label || LVL_TXT[lvl]}</span></div><h2>${titel}</h2><p>${uitleg}</p>
     ${tijden ? `<div class="times">
       <div><small>☀️ In de zon</small><b>👕 ${tijden.zon[0]}</b><br><b>🛁 ${tijden.zon[1]}</b></div>
       <div><small>🌳 In de schaduw</small><b>👕 ${tijden.schaduw[0]}</b><br><b>🛁 ${tijden.schaduw[1]}</b></div></div>` : ""}</div>`;
@@ -414,7 +474,7 @@ function toonLive(slots, nu){
     }
   }
 
-  $("liveOut").innerHTML = verdictHTML(lvl, titel, uitleg, null, label)
+  $("liveOut").innerHTML = verdictHTML(lvl, titel, uitleg, null, label, weerSoort(s))
     + beste(slots, nu)
     + renderFactoren({T:s.T, RH:s.RH, dag:s.dag}, s.S, s.Ts, s.b)
     + strip(slots, iNu);
@@ -536,7 +596,8 @@ function hand(){
     zon: klamZ ? ["blijft klam","blijft klam"] : [duur(uSh), duur(uHd)],
     schaduw: klamS ? ["blijft klam","blijft klam"] : [duur(uren(WATER.shirt, rS)), duur(uren(WATER.handdoek, rS))]
   };
-  $("handOut").innerHTML = verdictHTML(lvl, titel, uitleg, tijden) + renderFactoren({T, RH, dag:true}, S, Ts, b);
+  const weerH = weerSoort({ regen: regenH, dag: true, S, cloud, RH, b, T });
+  $("handOut").innerHTML = verdictHTML(lvl, titel, uitleg, tijden, null, weerH) + renderFactoren({T, RH, dag:true}, S, Ts, b);
 }
 ["iRh","iBft","iTemp"].forEach(id=>$(id).addEventListener("input",hand));
 function seg(id,cb){ $(id).querySelectorAll("button").forEach(b=>b.onclick=()=>{ $(id).querySelectorAll("button").forEach(x=>x.classList.remove("on")); b.classList.add("on"); cb(b.dataset.v); hand(); }); }
