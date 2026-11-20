@@ -257,7 +257,7 @@
     </ul>
     <p>Uitgangspunt: een goed gecentrifugeerd T-shirt en een badhanddoek, vrij hangend in een gewone tuin. De tijden zijn schattingen. In een beschutte hoek of met dubbel hangende stof duurt het langer.</p>
   </details>
-    <p class="versie">Weerdata van Open-Meteo, versie 19</p>
+    <p class="versie">Weerdata van Open-Meteo, versie 20</p>
   </footer>
   </section>
 </main>
@@ -318,6 +318,15 @@ function verdamping({T, RH, windKmh, S, cloud=50}){
 const KLAM_GRENS = 80;
 const VOORDROOG_GRENS = 88;   // komt de lucht rond de stof nooit hieronder, dan levert buiten hangen vrijwel niets op
 const zinvolVoordrogen = sim => sim && sim.shirt.tKlam && sim.shirt.minRh <= VOORDROOG_GRENS;
+// Voordrogen op dag 'off' (0 = vandaag): vanaf het eerste uur dat er iets droogt. Eén berekening voor weerblok, advies en week.
+function voordroog(slots, nu, off){
+  const dagNr = dagnr(nu) + off;
+  const licht = x => dagnr(x.t)===dagNr && x.dag && !x.regen && x.t + 3600000 > nu;
+  const eerste = slots.find(x => licht(x) && rateLvl(x.r, x.regen) !== "nee") || slots.find(licht);
+  if (!eerste) return null;
+  const start = Math.max(eerste.t, nu), sim = simuleer(slots, start, "r");
+  return zinvolVoordrogen(sim) ? { start, sim } : null;
+}
 function rhBijStof({T, RH, windKmh, S, cloud=50, hemel=0.5}){
   const v = Math.max(0.3, windKmh/3.6*0.5), h = 5.7 + 3.8*v, Tk = T+273.15;
   const epsSky = 0.75 + 0.2*Math.min(100,cloud)/100;
@@ -549,7 +558,7 @@ function toonLive(slots, nu){
     lvl="nee"; titel="Nu niet: het is donker"; uitleg="'s Avonds en 's nachts stijgt de luchtvochtigheid en droogt er bijna niets. Kijk hieronder wanneer je het best kunt ophangen.";
   } else if (!vandaag){
     const sim = simuleer(slots, nu);
-    if (zinvolVoordrogen(sim)){
+    if (voordroog(slots, nu, 0)){
       lvl="twijfel"; titel="Voordrogen kan";
       uitleg = "Helemaal droog wordt het buiten niet, de lucht is te vochtig. Buiten voordrogen en binnen nadrogen scheelt wel veel tijd.";
     } else {
@@ -600,13 +609,9 @@ function beste(slots, nu){
   const dag = (naam, off) => {
     const zon = advies(slots, nu, off, "r"), schaduw = advies(slots, nu, off, "rS");
     let tijd = "–", waar, titel, lijst = "", extra = "";
-    // Buiten voordrogen? Zoek het eerste lichte, droge uur en kijk of de was dan tot 'klam' komt
-    const dagNr = dagnr(nu) + off;
-    const licht = x => dagnr(x.t)===dagNr && x.dag && !x.regen && x.t + 3600000 > nu;
-    const eerste = slots.find(x => licht(x) && rateLvl(x.r, x.regen) !== "nee") || slots.find(licht);
-    const voor = (!zon && !schaduw && eerste) ? simuleer(slots, Math.max(eerste.t, nu), "r") : null;
-    if (zinvolVoordrogen(voor)){
-      const st = Math.max(eerste.t, nu);
+    const vd = (!zon && !schaduw) ? voordroog(slots, nu, off) : null, voor = vd && vd.sim;
+    if (vd){
+      const st = vd.start;
       tijd = (st - nu <= 5*60000) ? "Nu" : klok(st);
       waar = ["half","☀️ Voordrogen"];
       titel = "Buiten voordrogen, binnen nadrogen";
@@ -668,11 +673,9 @@ function weekDag(slots, nu, off){
     const start = (a.start - nu <= 5*60000) ? "nu" : "om "+klok(a.start);
     detail = `Ophangen ${start}${waar}, droog rond ${klokRond(sh.klaar)}`;
   } else {
-    const eerste = slots.find(x => dagnr(x.t)===dag && x.dag && !x.regen && x.t + 3600000 > nu && rateLvl(x.r,x.regen)!=="nee")
-                || slots.find(x => dagnr(x.t)===dag && x.dag && !x.regen && x.t + 3600000 > nu);
-    const voor = eerste ? simuleer(slots, Math.max(eerste.t, nu), "r") : null;
+    const vd = voordroog(slots, nu, off);
     const regenUren = licht.filter(x => x.regen).length;
-    if (zinvolVoordrogen(voor)){ lvl="twijfel"; kop="Voordrogen"; detail=`Buiten vanaf ${eerste.t <= nu ? "nu" : klok(eerste.t)}, daarna binnen`; }
+    if (vd){ lvl="twijfel"; kop="Voordrogen"; detail=`Buiten vanaf ${vd.start - nu <= 5*60000 ? "nu" : klok(vd.start)}, daarna binnen`; }
     else {
       const r = regenUren >= 2 ? "regen" : waaromNiet(slots, nu, off, "r");
       lvl="nee"; kop = r==="regen" ? "Regen" : r==="klam" ? "Te vochtig" : "Te weinig droogtijd";
