@@ -116,6 +116,18 @@
   .wat li strong{font-weight:700}
   .wat p{margin:8px 0 0;color:var(--muted);font-size:.88rem}
 
+  .wdag{display:grid;grid-template-columns:72px 28px 1fr auto;align-items:center;gap:8px;padding:11px 14px 11px 12px;border-left:5px solid var(--muted)}
+  .wdag + .wdag{border-top:1px solid var(--line)}
+  .weeklijst{overflow:hidden}
+  .wdag.w-top{border-left-color:var(--top)} .wdag.w-ja{border-left-color:var(--ja)} .wdag.w-twijfel{border-left-color:var(--twijfel)} .wdag.w-nee{border-left-color:var(--nee)}
+  .wdag.ver{opacity:.72}
+  .wnaam{font-weight:700;font-size:.95rem}
+  .wicoon{font-size:1.25rem;text-align:center}
+  .wtekst{display:flex;flex-direction:column;line-height:1.25;min-width:0}
+  .wtekst b{font-size:.98rem}
+  .wtekst small{color:var(--muted);font-size:.82rem}
+  .wtemp{font-weight:700;font-variant-numeric:tabular-nums;color:var(--muted)}
+  @media (max-width:380px){ .wdag{grid-template-columns:58px 24px 1fr auto;gap:6px} }
   .grafiek{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-md);padding:16px 14px 12px}
   .staven{display:flex;align-items:flex-end;gap:3px;height:96px;border-bottom:1px solid var(--line)}
   .staaf{flex:1;min-width:5px;border-radius:5px 5px 1px 1px}
@@ -236,7 +248,7 @@
     <div class="links">
       <button class="link" id="tHand">Zelf waarden invullen</button>
       <button class="link hidden" id="tLive">Terug naar het live weer</button>
-      <span>Weerdata van Open-Meteo, versie 15</span>
+      <span>Weerdata van Open-Meteo, versie 16</span>
     </div>
   </footer>
 </main>
@@ -414,7 +426,7 @@ async function laad(loc){
   $("liveOut").innerHTML = '<div class="card note">Weer ophalen…</div>';
   const vars = "temperature_2m,relative_humidity_2m,wind_speed_10m,cloud_cover,precipitation,precipitation_probability,is_day,direct_normal_irradiance,diffuse_radiation";
   try{
-    const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${loc.lat}&longitude=${loc.lon}&hourly=${vars}&timezone=auto&timeformat=unixtime&past_hours=1&forecast_days=3&wind_speed_unit=kmh`);
+    const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${loc.lat}&longitude=${loc.lon}&hourly=${vars}&timezone=auto&timeformat=unixtime&past_hours=1&forecast_days=8&wind_speed_unit=kmh`);
     const j = await r.json();
     TZ = j.utc_offset_seconds || 0;
     toonLive(prepareer(j, +loc.lat, +loc.lon), Date.now());
@@ -537,6 +549,7 @@ function toonLive(slots, nu){
 
   $("liveOut").innerHTML = verdictHTML(lvl, titel, uitleg, null, label, weerSoort(s), nuHTML(s))
     + beste(slots, nu)
+    + week(slots, nu)
     + strip(slots, iNu);
 }
 
@@ -605,6 +618,59 @@ function beste(slots, nu){
   };
   const nogLicht = slots.some(s => dagnr(s.t)===dagnr(nu) && s.t + 3600000 > nu && s.dag);
   return `<section class="blok"><h2 class="kop">Wanneer ophangen?</h2><div class="rooster">${nogLicht ? dag("Vandaag",0) : ""}${dag("Morgen",1)}</div></section>`;
+}
+
+// Weekoverzicht: per dag in één regel of je was buiten droog wordt
+function weekDag(slots, nu, off){
+  const dag = dagnr(nu) + off;
+  const licht = slots.filter(x => dagnr(x.t)===dag && x.dag);
+  if (!licht.length) return null;
+  // weerbeeld overdag
+  const regen = licht.some(x => x.regen), gemS = licht.reduce((a,x)=>a+x.S,0)/licht.length;
+  const icoon = regen ? "🌧️" : gemS >= 60 ? "☀️" : gemS >= 25 ? "⛅" : "☁️";
+  const maxT = Math.round(Math.max(...licht.map(x=>x.T)));
+  // advies
+  const zon = advies(slots, nu, off, "r"), schaduw = advies(slots, nu, off, "rS");
+  let lvl, kop, detail;
+  if (zon || schaduw){
+    const a = zon || schaduw, sh = a.sim.shirt, hd = a.sim.handdoek, bn = sh.binnen;
+    const handdoekOk = hd.klaar && !(bn && hd.klaar > bn);
+    const krap = (bn && (bn - sh.klaar) < 90*60000) || sh.minRh > KLAM_GRENS - 8;
+    const waar = !schaduw ? " in de zon" : "";
+    if (krap){ lvl="twijfel"; kop="Krap, binnen nadrogen"; }
+    else if (handdoekOk){ lvl="top"; kop="Alles wordt droog"; }
+    else { lvl="ja"; kop="Dunne was wordt droog"; }
+    const start = (a.start - nu <= 5*60000) ? "nu" : "om "+klok(a.start);
+    detail = `Ophangen ${start}${waar}, T-shirt droog rond ${klokRond(sh.klaar)}`;
+  } else {
+    const eerste = slots.find(x => dagnr(x.t)===dag && x.dag && !x.regen && x.t + 3600000 > nu && rateLvl(x.r,x.regen)!=="nee")
+                || slots.find(x => dagnr(x.t)===dag && x.dag && !x.regen && x.t + 3600000 > nu);
+    const voor = eerste ? simuleer(slots, Math.max(eerste.t, nu), "r") : null;
+    const regenUren = licht.filter(x => x.regen).length;
+    if (voor && voor.shirt.tKlam){ lvl="twijfel"; kop="Voordrogen"; detail=`Buiten vanaf ${eerste.t <= nu ? "nu" : klok(eerste.t)}, daarna binnen nadrogen`; }
+    else {
+      const r = regenUren >= 2 ? "regen" : waaromNiet(slots, nu, off, "r");
+      lvl="nee"; kop = r==="regen" ? "Regen" : r==="klam" ? "Te vochtig" : "Te weinig droogtijd";
+      detail = r==="regen" ? "De was wordt nat, droog hem binnen" : r==="klam" ? "De was blijft klam, ook in de zon" : "Niet droog voor het donker";
+    }
+  }
+  return { lvl, kop, detail, icoon, maxT, t: licht[0].t };
+}
+function week(slots, nu){
+  const DAG = ["zo","ma","di","wo","do","vr","za"];
+  const rijen = [];
+  for (let off = 0; off < 7; off++){
+    const d = weekDag(slots, nu, off);
+    if (!d) continue;
+    if (off === 0 && !slots.some(x => dagnr(x.t)===dagnr(nu) && x.dag && x.t + 3600000 > nu)) continue;  // vandaag al donker
+    const dt = new Date(d.t + TZ*1000);
+    const naam = off===0 ? "Vandaag" : off===1 ? "Morgen" : `${DAG[dt.getUTCDay()]} ${dt.getUTCDate()}`;
+    rijen.push(`<div class="wdag w-${d.lvl}${off>=4 ? " ver" : ""}">
+      <span class="wnaam">${naam}</span><span class="wicoon" aria-hidden="true">${d.icoon}</span>
+      <span class="wtekst"><b>${d.kop}</b><small>${d.detail}</small></span><span class="wtemp">${d.maxT}°</span></div>`);
+  }
+  return `<section class="blok"><h2 class="kop">Deze week</h2><div class="rooster weeklijst">${rijen.join("")}</div>
+    <p class="note" style="margin:8px 2px 0">Hoe verder vooruit, hoe onzekerder de verwachting. De laatste dagen staan daarom iets vager.</p></section>`;
 }
 
 function strip(slots, iNu){
