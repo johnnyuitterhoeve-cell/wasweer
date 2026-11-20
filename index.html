@@ -257,7 +257,7 @@
     </ul>
     <p>Uitgangspunt: een goed gecentrifugeerd T-shirt en een badhanddoek, vrij hangend in een gewone tuin. De tijden zijn schattingen. In een beschutte hoek of met dubbel hangende stof duurt het langer.</p>
   </details>
-    <p class="versie">Weerdata van Open-Meteo, versie 18</p>
+    <p class="versie">Weerdata van Open-Meteo, versie 19</p>
   </footer>
   </section>
 </main>
@@ -316,6 +316,8 @@ function verdamping({T, RH, windKmh, S, cloud=50}){
 // Luchtvochtigheid vlak bij bijna droge stof (%). Zon warmt de stof op -> de lucht eromheen is relatief droger.
 // Boven ~80% houdt katoen zoveel vocht vast dat het klam blijft (hygroscopisch evenwicht).
 const KLAM_GRENS = 80;
+const VOORDROOG_GRENS = 88;   // komt de lucht rond de stof nooit hieronder, dan levert buiten hangen vrijwel niets op
+const zinvolVoordrogen = sim => sim && sim.shirt.tKlam && sim.shirt.minRh <= VOORDROOG_GRENS;
 function rhBijStof({T, RH, windKmh, S, cloud=50, hemel=0.5}){
   const v = Math.max(0.3, windKmh/3.6*0.5), h = 5.7 + 3.8*v, Tk = T+273.15;
   const epsSky = 0.75 + 0.2*Math.min(100,cloud)/100;
@@ -468,8 +470,8 @@ function prepareer(j, lat, lon){
     const dS = { ...d, windKmh: d.windKmh*SCHADUW_WIND, S: zonOpStof(0, h.diffuse_radiation[i+1] ?? 0, elev) };  // schaduw: alleen diffuus licht, minder wind
     const rS = verdamping(dS).r;
     const rhZ = rhBijStof({ ...d, S }), rhS = rhBijStof({ ...dS, hemel: 0.25 });
-    const regen = (h.precipitation[i+1] ?? 0) >= 0.2 || (h.precipitation_probability[i+1] ?? 0) >= 70;
-    slots.push({ t, ...d, S, r, rS, rhZ, rhS, Ts, elev, dag: elev > -1, regen, kans: h.precipitation_probability[i+1] ?? 0, b: bft(d.windKmh) });
+    const regen = (h.precipitation[i+1] ?? 0) >= 0.1 || (h.precipitation_probability[i+1] ?? 0) >= 60;   // ook motregen maakt de was nat
+    slots.push({ t, ...d, S, r, rS, rhZ, rhS, Ts, elev, dag: elev > -1, regen, kans: h.precipitation_probability[i+1] ?? 0, mm: h.precipitation[i+1] ?? 0, b: bft(d.windKmh) });
   }
   return slots;
 }
@@ -538,20 +540,22 @@ function toonLive(slots, nu){
 
   let lvl, titel, uitleg, tijden = null, label = null;
   if (s.regen){
-    lvl="nee"; titel="Nee, het regent"; uitleg = s.kans ? `Kans op neerslag: ${s.kans}%.` : "Er valt nu neerslag.";
+    const miezer = s.mm > 0 && s.mm < 0.5;
+    lvl="nee"; titel = miezer ? "Nee, het miezert" : "Nee, het regent";
+    uitleg = miezer ? "Ook motregen maakt je was nat." : s.mm >= 0.5 ? `Er valt ${String(Math.round(s.mm*10)/10).replace(".",",")} mm per uur.` : `Kans op neerslag: ${s.kans}%.`;
   } else if (s.b >= 8){
     lvl="nee"; titel="Nee, het stormt"; uitleg="Bij windkracht 8 of meer waait je was van de lijn.";
   } else if (!s.dag){
     lvl="nee"; titel="Nu niet: het is donker"; uitleg="'s Avonds en 's nachts stijgt de luchtvochtigheid en droogt er bijna niets. Kijk hieronder wanneer je het best kunt ophangen.";
   } else if (!vandaag){
     const sim = simuleer(slots, nu);
-    if (sim && sim.shirt.tKlam){
+    if (zinvolVoordrogen(sim)){
       lvl="twijfel"; titel="Voordrogen kan";
       uitleg = "Helemaal droog wordt het buiten niet, de lucht is te vochtig. Buiten voordrogen en binnen nadrogen scheelt wel veel tijd.";
     } else {
-    lvl="nee"; titel = sim && sim.shirt.regen ? "Nee, er komt regen" : "Vandaag wordt het niet droog";
+    lvl="nee"; titel = sim && sim.shirt.regen ? "Nee, er komt regen" : sim && sim.shirt.klam ? "Nee, te vochtig" : "Vandaag wordt het niet droog";
     uitleg = sim && sim.shirt.regen ? "Er wordt regen verwacht voordat je was droog is."
-      : sim && sim.shirt.klam ? "De lucht is te vochtig: je was droogt op, maar blijft klam. Kijk hieronder voor morgen."
+      : sim && sim.shirt.klam ? `Bij ${Math.round(s.RH)}% luchtvochtigheid droogt de was buiten nauwelijks. Droog hem binnen.`
       : "Zelfs een T-shirt wordt vandaag niet droog voor het donker. Kijk hieronder voor morgen.";
     }
   } else {
@@ -601,7 +605,7 @@ function beste(slots, nu){
     const licht = x => dagnr(x.t)===dagNr && x.dag && !x.regen && x.t + 3600000 > nu;
     const eerste = slots.find(x => licht(x) && rateLvl(x.r, x.regen) !== "nee") || slots.find(licht);
     const voor = (!zon && !schaduw && eerste) ? simuleer(slots, Math.max(eerste.t, nu), "r") : null;
-    if (voor && voor.shirt.tKlam){
+    if (zinvolVoordrogen(voor)){
       const st = Math.max(eerste.t, nu);
       tijd = (st - nu <= 5*60000) ? "Nu" : klok(st);
       waar = ["half","☀️ Voordrogen"];
@@ -612,7 +616,7 @@ function beste(slots, nu){
       const r = waaromNiet(slots, nu, off, "r");
       waar = ["nee","Binnen drogen"];
       titel = "Niet buiten drogen";
-      extra = r==="klam" ? "De lucht is te vochtig: je was droogt op, maar blijft klam. Ook in de zon." : r==="regen" ? "Er komt regen tussendoor." : "Je was wordt niet droog voor het donker.";
+      extra = r==="klam" ? "De lucht is te vochtig: buiten droogt de was nauwelijks." : r==="regen" ? "Er komt regen tussendoor." : "Je was wordt niet droog voor het donker.";
     } else {
       const a = zon || schaduw;
       tijd = (a.start - nu <= 5*60000) ? "Nu" : klok(a.start);
@@ -668,7 +672,7 @@ function weekDag(slots, nu, off){
                 || slots.find(x => dagnr(x.t)===dag && x.dag && !x.regen && x.t + 3600000 > nu);
     const voor = eerste ? simuleer(slots, Math.max(eerste.t, nu), "r") : null;
     const regenUren = licht.filter(x => x.regen).length;
-    if (voor && voor.shirt.tKlam){ lvl="twijfel"; kop="Voordrogen"; detail=`Buiten vanaf ${eerste.t <= nu ? "nu" : klok(eerste.t)}, daarna binnen`; }
+    if (zinvolVoordrogen(voor)){ lvl="twijfel"; kop="Voordrogen"; detail=`Buiten vanaf ${eerste.t <= nu ? "nu" : klok(eerste.t)}, daarna binnen`; }
     else {
       const r = regenUren >= 2 ? "regen" : waaromNiet(slots, nu, off, "r");
       lvl="nee"; kop = r==="regen" ? "Regen" : r==="klam" ? "Te vochtig" : "Te weinig droogtijd";
