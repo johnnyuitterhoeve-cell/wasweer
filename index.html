@@ -26,14 +26,14 @@
   *{box-sizing:border-box}
   html{-webkit-text-size-adjust:100%}
   body{margin:0;background:var(--sky);color:var(--ink);font:16px/1.5 "Bricolage Grotesque",system-ui,sans-serif;font-optical-sizing:auto}
-  main{max-width:560px;margin:0 auto;padding:14px 16px 40px}
+  main{max-width:560px;margin:0 auto;padding:14px 16px calc(96px + env(safe-area-inset-bottom))}
   button{font:inherit;color:inherit}
   :focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:8px}
   .hidden{display:none!important}
   .note{font-size:.88rem;color:var(--muted)}
 
   /* kopregel */
-  .top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:4px 0 14px}
+  .top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:2px 0 12px}
   .merk{display:flex;align-items:center;gap:9px;font-weight:750;font-size:1.2rem;letter-spacing:-.015em;margin:0}
   .merk img{width:28px;height:28px;border-radius:8px}
   .plek{display:flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--paper);padding:7px 13px 7px 10px;border-radius:99px;cursor:pointer;font-weight:600;font-size:.92rem;max-width:62%}
@@ -53,13 +53,13 @@
   .melding{background:#FFF3D1;color:#5A4300;border-radius:var(--r-sm);padding:10px 12px;font-size:.9rem;margin-bottom:12px}
 
   /* hoofdblok: het weer van nu */
-  .verdict{position:relative;overflow:hidden;border-radius:var(--r-lg);padding:20px 20px 18px;color:#fff;margin:0 0 26px;min-height:240px;display:flex;flex-direction:column;box-shadow:0 18px 40px -26px rgba(18,35,44,.75)}
+  .verdict{position:relative;overflow:hidden;border-radius:var(--r-lg);padding:18px 20px 16px;color:#fff;margin:0 0 20px;min-height:190px;display:flex;flex-direction:column;box-shadow:0 18px 40px -26px rgba(18,35,44,.75)}
   .verdict > :not(.sky){position:relative;z-index:1}
-  .verdict h2{font-size:2.3rem;line-height:1.02;letter-spacing:-.025em;font-weight:780;margin:16px 0 10px;max-width:82%}
+  .verdict h2{font-size:2.05rem;line-height:1.02;letter-spacing:-.025em;font-weight:780;margin:12px 0 8px;max-width:82%}
   .verdict p{margin:0;max-width:34ch;font-size:1rem;opacity:.95}
   .pill{display:inline-block;font-size:.82rem;font-weight:700;padding:4px 11px;border-radius:99px;color:#fff;box-shadow:0 1px 4px rgba(0,0,0,.18)}
   .p-top{background:var(--top)} .p-ja{background:var(--ja)} .p-twijfel{background:var(--twijfel)} .p-nee{background:var(--nee)}
-  .nu{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:auto;padding-top:20px;font-size:.8rem;border-top:1px solid rgba(255,255,255,.25)}
+  .nu{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:auto;padding-top:14px;font-size:.8rem;border-top:1px solid rgba(255,255,255,.25)}
   .w-zon .nu,.w-half .nu,.w-mist .nu,.w-vorst .nu{border-top-color:rgba(0,0,0,.12)}
   .nu div{display:flex;flex-direction:column;line-height:1.15}
   .nu b{font-size:1.3rem;font-weight:700;font-variant-numeric:tabular-nums}
@@ -100,10 +100,10 @@
   @media (prefers-reduced-motion: reduce){.sky *{animation:none!important}}
 
   /* secties */
-  .blok{margin:0 0 26px}
-  .kop{font-size:1.25rem;font-weight:750;letter-spacing:-.015em;margin:0 0 10px 2px}
+  .blok{margin:0 0 18px}
+  .kop{font-size:1.2rem;font-weight:750;letter-spacing:-.015em;margin:0 0 8px 2px}
   .rooster{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-md)}
-  .rij{display:grid;grid-template-columns:84px 1fr;gap:14px;padding:16px}
+  .rij{display:grid;grid-template-columns:84px 1fr;gap:14px;padding:14px 16px}
   .rij + .rij{border-top:1px solid var(--line)}
   .tijd small{display:block;color:var(--muted);font-size:.85rem;font-weight:600}
   .tijd strong{display:block;font-size:2rem;font-weight:780;letter-spacing:-.03em;font-variant-numeric:tabular-nums;line-height:1.05}
@@ -116,7 +116,7 @@
   .wat li strong{font-weight:700}
   .wat p{margin:8px 0 0;color:var(--muted);font-size:.88rem}
 
-  .wdag{display:grid;grid-template-columns:72px 28px 1fr auto;align-items:center;gap:8px;padding:11px 14px 11px 12px;border-left:5px solid var(--muted)}
+  .wdag{display:grid;grid-template-columns:64px 26px 1fr auto;align-items:center;gap:8px;padding:9px 14px 9px 12px;border-left:5px solid var(--muted)}
   .wdag + .wdag{border-top:1px solid var(--line)}
   .weeklijst{overflow:hidden}
   .wdag.w-top{border-left-color:var(--top)} .wdag.w-ja{border-left-color:var(--ja)} .wdag.w-twijfel{border-left-color:var(--twijfel)} .wdag.w-nee{border-left-color:var(--nee)}
@@ -151,10 +151,22 @@
   .install .it{flex:1;display:flex;flex-direction:column;line-height:1.35}
   .install .x{position:absolute;top:6px;right:8px;border:0;background:none;font-size:1.3rem;color:var(--muted);cursor:pointer}
 
+  /* tabbalk */
+  .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:20;background:color-mix(in srgb, var(--paper) 90%, transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid var(--line);padding:6px 8px calc(6px + env(safe-area-inset-bottom))}
+  .tabbar .in{display:flex;max-width:560px;margin:0 auto}
+  .tab-knop{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;border:0;background:none;padding:4px 0;font-size:.76rem;font-weight:650;color:var(--muted);cursor:pointer}
+  .tab-knop .ico{display:flex;align-items:center;justify-content:center;width:56px;height:30px;border-radius:99px;transition:background .2s}
+  .tab-knop svg{width:22px;height:22px}
+  .tab-knop[aria-selected=true]{color:var(--accent)}
+  .tab-knop[aria-selected=true] .ico{background:color-mix(in srgb, var(--accent) 16%, transparent)}
+  .leeg{color:var(--muted);text-align:center;padding:40px 10px}
+  .versie{font-size:.85rem;color:var(--muted);margin:14px 2px 0}
+  #t-meer details{margin-top:6px}
+
   /* voet */
   .voet{margin-top:34px;font-size:.9rem;color:var(--muted)}
-  .voet details{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-md);padding:14px 16px}
-  .voet summary{cursor:pointer;font-weight:650;color:var(--ink)}
+  .voet details, #t-meer details{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-md);padding:14px 16px}
+  .voet summary, #t-meer summary{cursor:pointer;font-weight:650;color:var(--ink)}
   .voet details p,.voet details ul{font-size:.92rem}
   .voet details ul{padding-left:18px}
   .links{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-top:14px;padding:0 2px}
@@ -196,9 +208,11 @@
 
   <div class="melding hidden" id="liveErr"></div>
 
-  <section id="live"><div id="liveOut"></div></section>
+  <section id="t-vandaag" class="tab" role="tabpanel" aria-labelledby="k-vandaag"><div id="liveOut"></div></section>
+  <section id="t-week" class="tab hidden" role="tabpanel" aria-labelledby="k-week"><div id="weekOut"><p class="leeg">Kies eerst je plaats, dan zie je hier de hele week.</p></div></section>
+  <section id="t-uur" class="tab hidden" role="tabpanel" aria-labelledby="k-uur"><div id="uurOut"><p class="leeg">Kies eerst je plaats, dan zie je hier de droogkracht per uur.</p></div></section>
 
-  <section id="hand" class="hidden">
+  <section id="t-meer" class="tab hidden" role="tabpanel" aria-labelledby="k-meer">
     <h2 class="kop">Zelf invullen</h2>
     <div class="paneel">
       <label class="s">Luchtvochtigheid <span id="oRh"></span></label>
@@ -226,9 +240,7 @@
       </div>
     </div>
     <div id="handOut"></div>
-  </section>
-
-  <footer class="voet">
+      <footer class="voet">
     <details>
       <summary>Hoe wordt dit berekend?</summary>
     <p>De app rekent met de energiebalans van natte stof, hetzelfde principe als de Penman-Monteith-vergelijking die weerdiensten voor hun "droogindex" gebruiken. Per uur bepaalt hij hoeveel water er uit je was kan verdampen:</p>
@@ -245,13 +257,23 @@
     </ul>
     <p>Uitgangspunt: een goed gecentrifugeerd T-shirt en een badhanddoek, vrij hangend in een gewone tuin. De tijden zijn schattingen. In een beschutte hoek of met dubbel hangende stof duurt het langer.</p>
   </details>
-    <div class="links">
-      <button class="link" id="tHand">Zelf waarden invullen</button>
-      <button class="link hidden" id="tLive">Terug naar het live weer</button>
-      <span>Weerdata van Open-Meteo, versie 16</span>
-    </div>
+    <p class="versie">Weerdata van Open-Meteo, versie 17</p>
   </footer>
+  </section>
 </main>
+
+<nav class="tabbar" role="tablist" aria-label="Onderdelen">
+  <div class="in">
+    <button class="tab-knop" role="tab" id="k-vandaag" data-tab="vandaag" aria-controls="t-vandaag" aria-selected="true">
+      <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></span>Vandaag</button>
+    <button class="tab-knop" role="tab" id="k-week" data-tab="week" aria-controls="t-week" aria-selected="false">
+      <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></span>Week</button>
+    <button class="tab-knop" role="tab" id="k-uur" data-tab="uur" aria-controls="t-uur" aria-selected="false">
+      <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V12M9.3 20V6M14.6 20v-9M20 20V9"/></svg></span>Per uur</button>
+    <button class="tab-knop" role="tab" id="k-meer" data-tab="meer" aria-controls="t-meer" aria-selected="false">
+      <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></span>Meer</button>
+  </div>
+</nav>
 
 <script>
 /* ================= NATUURKUNDE ================= */
@@ -539,18 +561,17 @@ function toonLive(slots, nu){
     if (wacht){
       label = `${LVL_TXT[lvl]} vanaf ${klok(start)}`;
       titel = `Wacht tot ${klok(start)}`;
-      const nuReden = s.RH >= 90 ? `de lucht is nu bijna verzadigd (${Math.round(s.RH)}%)` : s.S < 35 ? "er is nu nog geen zon" : "het droogt nu nog traag";
-      uitleg = `Nu ophangen heeft weinig zin: ${nuReden}. Vanaf ${klok(start)} droogt het goed.`;
+      const nuReden = s.RH >= 90 ? `is de lucht bijna verzadigd (${Math.round(s.RH)}%)` : s.S < 35 ? "is er nog geen zon" : "droogt het nog traag";
+      uitleg = `Nu ${nuReden}. Vanaf ${klok(start)} droogt het goed.`;
     } else {
       titel = lvl==="top" ? "Ja, top wasweer" : hd.klaar ? "Ja, alles wordt droog" : lvl==="ja" ? "Ja, voor dunne was" : "Kan, maar het gaat traag";
       uitleg = `${drijfveer(s.S, s.b, s.RH)} Hieronder zie je waar en wanneer je het best ophangt.`.trim();
     }
   }
 
-  $("liveOut").innerHTML = verdictHTML(lvl, titel, uitleg, null, label, weerSoort(s), nuHTML(s))
-    + beste(slots, nu)
-    + week(slots, nu)
-    + strip(slots, iNu);
+  $("liveOut").innerHTML = verdictHTML(lvl, titel, uitleg, null, label, weerSoort(s), nuHTML(s)) + beste(slots, nu);
+  $("weekOut").innerHTML = week(slots, nu);
+  $("uurOut").innerHTML = strip(slots, iNu);
 }
 
 // Waarom wordt het die dag niet droog? 'klam', 'regen' of 'donker'
@@ -567,10 +588,10 @@ function waaromNiet(slots, nu, off, key){
 
 // Ophangadvies per dag: één advies dat zon en schaduw combineert
 function beste(slots, nu){
-  const handdoekTxt = sim => (sim.handdoek.klaar && sim.shirt.binnen && sim.handdoek.klaar > sim.shirt.binnen) ? "niet droog voordat het weer vochtig wordt"
+  const handdoekTxt = sim => (sim.handdoek.klaar && sim.shirt.binnen && sim.handdoek.klaar > sim.shirt.binnen) ? "wordt niet droog"
     : sim.handdoek.klaar ? "droog rond "+klokRond(sim.handdoek.klaar)
-    : sim.handdoek.regen ? "regen ertussen" : sim.handdoek.klam ? "blijft klam" : "niet droog voor het donker";
-  const redenTxt = r => r==="klam" ? "blijft hij klam, de lucht is te vochtig" : r==="regen" ? "komt er regen tussendoor" : "wordt hij niet droog voor het donker";
+    : sim.handdoek.regen ? "regen ertussen" : sim.handdoek.klam ? "blijft klam" : "wordt niet droog";
+  const redenTxt = r => r==="klam" ? "blijft hij klam" : r==="regen" ? "komt er regen tussendoor" : "wordt hij niet droog";
 
   const dag = (naam, off) => {
     const zon = advies(slots, nu, off, "r"), schaduw = advies(slots, nu, off, "rS");
@@ -586,7 +607,7 @@ function beste(slots, nu){
       waar = ["half","☀️ Voordrogen"];
       titel = "Buiten voordrogen, binnen nadrogen";
       lijst = `<ul><li><span>👕</span><span>Bijna droog rond ${klokRond(voor.shirt.tKlam)}, voelt nog klam</span></li>${voor.shirt.binnen ? `<li><span>⏰</span><span><strong>Binnenhalen vóór ${klokOmlaag(voor.shirt.binnen)}</strong></span></li>` : ""}</ul>`;
-      extra = "Helemaal droog wordt het buiten niet: de lucht is te vochtig. Hang de was daarna binnen nog even te drogen, dat gaat dan snel.";
+      extra = "Hang de was daarna binnen nog even te drogen.";
     } else if (!zon && !schaduw){
       const r = waaromNiet(slots, nu, off, "r");
       waar = ["nee","Binnen drogen"];
@@ -596,28 +617,28 @@ function beste(slots, nu){
       const a = zon || schaduw;
       tijd = (a.start - nu <= 5*60000) ? "Nu" : klok(a.start);
       const bn = a.sim.shirt.binnen;
-      lijst = `<ul><li><span>👕</span><span>T-shirt droog rond ${klokRond(a.sim.shirt.klaar)}</span></li><li><span>🛁</span><span>Handdoek ${handdoekTxt(a.sim)}</span></li>${bn ? `<li><span>⏰</span><span><strong>Binnenhalen vóór ${klokOmlaag(bn)}</strong>, daarna wordt hij weer klam</span></li>` : ""}</ul>`;
+      lijst = `<ul><li><span>👕</span><span>T-shirt droog rond ${klokRond(a.sim.shirt.klaar)}</span></li><li><span>🛁</span><span>Handdoek ${handdoekTxt(a.sim)}</span></li>${bn ? `<li><span>⏰</span><span><strong>Binnenhalen vóór ${klokOmlaag(bn)}</strong></span></li>` : ""}</ul>`;
       const krap = (bn && (bn - a.sim.shirt.klaar) < 90*60000) || a.sim.shirt.minRh > KLAM_GRENS - 8;
       if (!schaduw){
         waar = ["zon","☀️ In de zon"]; titel = "Hang je was in de zon";
         extra = `In de schaduw ${redenTxt(waaromNiet(slots, nu, off, "rS"))}.`;
       } else if ((schaduw.sim.shirt.klaar - zon.sim.shirt.klaar)/3600000 > 1){
         waar = ["zon","☀️ Liefst in de zon"]; titel = "Hang je was het liefst in de zon";
-        extra = `In de schaduw kan ook, maar dan is een T-shirt pas rond ${klokRond(schaduw.sim.shirt.klaar)} droog.`;
+        extra = `In de schaduw is een T-shirt pas rond ${klokRond(schaduw.sim.shirt.klaar)} droog.`;
       } else {
         waar = ["beide","Zon of schaduw"]; titel = "Hang je was waar je wilt";
-        extra = `Het maakt ${off ? "morgen" : "vandaag"} weinig uit of hij in de zon of in de schaduw hangt.`;
+        extra = "Zon of schaduw maakt weinig uit.";
       }
       if (krap){
         waar = ["half", waar[1]];
-        extra = `Krap: tussen droog en binnenhalen zit weinig tijd. Waarschijnlijk voelt de was nog een beetje klam aan; hang hem binnen even na. ` + extra;
+        extra = `Krap: voelt waarschijnlijk nog wat klam, hang hem binnen even na. ` + extra;
       }
     }
     return `<div class="rij"><div class="tijd"><small>${naam}</small><strong>${tijd}</strong></div>
       <div class="wat"><span class="waar waar-${waar[0]}">${waar[1]}</span><b>${titel}</b>${lijst}${extra ? `<p>${extra}</p>` : ""}</div></div>`;
   };
   const nogLicht = slots.some(s => dagnr(s.t)===dagnr(nu) && s.t + 3600000 > nu && s.dag);
-  return `<section class="blok"><h2 class="kop">Wanneer ophangen?</h2><div class="rooster">${nogLicht ? dag("Vandaag",0) : ""}${dag("Morgen",1)}</div></section>`;
+  return `<section class="blok"><h2 class="kop">Wanneer ophangen?</h2><div class="rooster">${nogLicht ? dag("Vandaag",0) : dag("Morgen",1)}</div></section>`;
 }
 
 // Weekoverzicht: per dag in één regel of je was buiten droog wordt
@@ -637,21 +658,21 @@ function weekDag(slots, nu, off){
     const handdoekOk = hd.klaar && !(bn && hd.klaar > bn);
     const krap = (bn && (bn - sh.klaar) < 90*60000) || sh.minRh > KLAM_GRENS - 8;
     const waar = !schaduw ? " in de zon" : "";
-    if (krap){ lvl="twijfel"; kop="Krap, binnen nadrogen"; }
+    if (krap){ lvl="twijfel"; kop="Krap, nadrogen"; }
     else if (handdoekOk){ lvl="top"; kop="Alles wordt droog"; }
     else { lvl="ja"; kop="Dunne was wordt droog"; }
     const start = (a.start - nu <= 5*60000) ? "nu" : "om "+klok(a.start);
-    detail = `Ophangen ${start}${waar}, T-shirt droog rond ${klokRond(sh.klaar)}`;
+    detail = `Ophangen ${start}${waar}, droog rond ${klokRond(sh.klaar)}`;
   } else {
     const eerste = slots.find(x => dagnr(x.t)===dag && x.dag && !x.regen && x.t + 3600000 > nu && rateLvl(x.r,x.regen)!=="nee")
                 || slots.find(x => dagnr(x.t)===dag && x.dag && !x.regen && x.t + 3600000 > nu);
     const voor = eerste ? simuleer(slots, Math.max(eerste.t, nu), "r") : null;
     const regenUren = licht.filter(x => x.regen).length;
-    if (voor && voor.shirt.tKlam){ lvl="twijfel"; kop="Voordrogen"; detail=`Buiten vanaf ${eerste.t <= nu ? "nu" : klok(eerste.t)}, daarna binnen nadrogen`; }
+    if (voor && voor.shirt.tKlam){ lvl="twijfel"; kop="Voordrogen"; detail=`Buiten vanaf ${eerste.t <= nu ? "nu" : klok(eerste.t)}, daarna binnen`; }
     else {
       const r = regenUren >= 2 ? "regen" : waaromNiet(slots, nu, off, "r");
       lvl="nee"; kop = r==="regen" ? "Regen" : r==="klam" ? "Te vochtig" : "Te weinig droogtijd";
-      detail = r==="regen" ? "De was wordt nat, droog hem binnen" : r==="klam" ? "De was blijft klam, ook in de zon" : "Niet droog voor het donker";
+      detail = r==="regen" ? "Binnen drogen" : r==="klam" ? "Blijft klam, ook in de zon" : "Niet droog voor het donker";
     }
   }
   return { lvl, kop, detail, icoon, maxT, t: licht[0].t };
@@ -670,7 +691,7 @@ function week(slots, nu){
       <span class="wtekst"><b>${d.kop}</b><small>${d.detail}</small></span><span class="wtemp">${d.maxT}°</span></div>`);
   }
   return `<section class="blok"><h2 class="kop">Deze week</h2><div class="rooster weeklijst">${rijen.join("")}</div>
-    <p class="note" style="margin:8px 2px 0">Hoe verder vooruit, hoe onzekerder de verwachting. De laatste dagen staan daarom iets vager.</p></section>`;
+    <p class="note" style="margin:6px 2px 0">Vagere dagen: verder vooruit, dus minder zeker.</p></section>`;
 }
 
 function strip(slots, iNu){
@@ -744,12 +765,21 @@ function seg(id,cb){ $(id).querySelectorAll("button").forEach(b=>b.onclick=()=>{
 seg("iSky",v=>sky=v); seg("iSeizoen",v=>elevH=+v); seg("iRain",v=>regenH=+v);
 
 /* ================= TABS ================= */
+const TABS = ["vandaag","week","uur","meer"];
 function toon(w){
-  $("live").classList.toggle("hidden", w!=="live"); $("hand").classList.toggle("hidden", w!=="hand");
-  $("tHand").classList.toggle("hidden", w==="hand"); $("tLive").classList.toggle("hidden", w!=="hand");
+  if (w === "live") w = "vandaag";
+  if (w === "hand") w = "meer";
+  if (!TABS.includes(w)) w = "vandaag";
+  for (const t of TABS){
+    $("t-"+t).classList.toggle("hidden", t !== w);
+    $("k-"+t).setAttribute("aria-selected", t === w);
+  }
+  try { history.replaceState(null, "", w === "vandaag" ? location.pathname : "#"+w); } catch(e) {}
   window.scrollTo({top:0});
 }
-$("tLive").onclick=()=>toon("live"); $("tHand").onclick=()=>toon("hand");
+document.querySelectorAll(".tab-knop").forEach(k => k.onclick = () => toon(k.dataset.tab));
+window.addEventListener("hashchange", () => toon(location.hash.slice(1)));
+toon(location.hash.slice(1));
 
 /* ================= INSTALLEREN ALS APP ================= */
 const alsApp = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
